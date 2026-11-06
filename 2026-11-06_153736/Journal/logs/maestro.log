@@ -1,0 +1,31 @@
+15:40:24.720 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Define variables RUNNING
+15:40:24.720 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Define variables COMPLETED
+15:40:24.721 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Apply configuration RUNNING
+15:40:24.721 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Apply configuration COMPLETED
+15:40:24.721 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Launch app "com.stillsoundlab.still" RUNNING
+15:40:25.758 [ INFO] maestro.Maestro.launchApp$lambda$6: Launching app com.stillsoundlab.still
+15:40:25.758 [ INFO] maestro.Maestro.launchApp$lambda$6: Stopping com.stillsoundlab.still app during launch
+15:40:29.055 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Launch app "com.stillsoundlab.still" COMPLETED
+15:40:29.056 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Tap on id: tab-journal RUNNING
+15:40:31.374 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tapping on element:  UiElement(treeNode=TreeNode(attributes={accessibilityText=Journal, tab, 2 of 3, title=, value=, text=, hintText=, resource-id=tab-journal, bounds=[134,791][268,840], enabled=true, focused=false, selected=false, checked=false}, children=[], clickable=null, enabled=true, focused=false, checked=false, selected=false), bounds=Bounds(x=134, y=791, width=134, height=49))
+15:40:31.823 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tap aimed via trusted pre-wait hierarchy (null settle, no recent scroll)
+15:40:31.823 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Try tapping at (201, 815) using hierarchy based logic for wait
+15:40:31.824 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to byte array
+15:40:31.825 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to output sink
+15:40:32.760 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Something have changed in the UI judging by view hierarchy. Proceed.
+15:40:32.760 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Tap on id: tab-journal COMPLETED
+15:40:32.760 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that "Your hard days" is visible RUNNING
+15:40:35.742 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that "Your hard days" is visible COMPLETED
+15:40:35.742 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Scrolling DOWN until "Episodes \(1\)" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering enabled RUNNING
+15:40:36.729 [ WARN] maestro.orchestra.Orchestra.scrollUntilVisible: Error: maestro.MaestroException$ElementNotFound: Element not found: Text matching regex: Episodes \(1\)
+15:40:36.743 [ INFO] maestro.Maestro.swipeFromCenter: Swiping UP from center
+15:40:40.877 [ INFO] maestro.orchestra.Orchestra.scrollUntilVisible: Scrolling try count: 0, DeviceWidth: 402, DeviceWidth: 874
+15:40:40.885 [ INFO] maestro.orchestra.Orchestra.scrollUntilVisible: Element bounds: Bounds(x=37, y=423, width=328, height=24)
+15:40:40.886 [ INFO] maestro.orchestra.Orchestra.scrollUntilVisible: Visibility Percent: 1.0
+15:40:40.887 [ INFO] maestro.orchestra.Orchestra.scrollUntilVisible: Command centerElement: ScrollUntilVisibleCommand(selector=ElementSelector(textRegex=Episodes \(1\), idRegex=null, size=null, below=null, above=null, leftOf=null, rightOf=null, containsChild=null, containsDescendants=null, traits=null, index=null, enabled=null, optional=false, selected=null, checked=null, focused=null, childOf=null, css=null), direction=DOWN, scrollDuration=601, visibilityPercentage=100, timeout=20000, waitToSettleTimeoutMs=null, centerElement=true, originalSpeedValue=40, label=null, optional=false).centerElement
+15:40:40.887 [ INFO] maestro.orchestra.Orchestra.scrollUntilVisible: visibilityPercentageNormalized: 1.0
+15:40:40.887 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Scrolling DOWN until "Episodes \(1\)" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering enabled COMPLETED
+15:40:40.889 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Take screenshot 10-journal RUNNING
+15:40:40.893 [ INFO] maestro.Maestro.takeScreenshot: Taking screenshot
+15:40:40.894 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to output sink
+15:40:41.111 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Take screenshot 10-journal COMPLETED
