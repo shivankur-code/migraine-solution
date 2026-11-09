@@ -62,7 +62,7 @@ export default function JournalScreen() {
             <H1>Your journal</H1>
             <Muted>Still notes each time you use it. It stays on this device.</Muted>
           </View>
-          <Hud size={wide ? 170 : 112} tl={`${m.usedEpisodes} days`} br={textureName(texture)} ticks={false}>
+          <Hud size={wide ? 170 : 112} tl={`${m.usedEpisodes} ${m.usedEpisodes === 1 ? 'day' : 'days'}`} br={textureName(texture)} ticks={false}>
             <Cymatics figure={formed ? figure : null} size={wide ? 166 : 108} live={formed} pulse={pulse} />
           </Hud>
         </View>

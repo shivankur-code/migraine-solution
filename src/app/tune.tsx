@@ -57,7 +57,7 @@ export default function MySound() {
         </View>
       </View>
       <Pressable accessibilityRole="button" accessibilityLabel={preview.on ? 'Stop listening' : 'Listen'} onPressIn={tap} onPress={() => preview.toggle(profile)} style={{ alignSelf: 'center' }}>
-        <Hud size={plate} tl={textureName(normal.texture)} tr={`Tone ${word('tone')}`} bl={`Hum ${word('hum')} · ${word('motion')}`} br={`Space ${word('space')}`}>
+        <Hud size={plate} tl={textureName(normal.texture)} tr={word('hum') === 'None' ? word('tone') : `${word('tone')} · hum`} bl={word('motion')} br={word('space')}>
           <Cymatics figure={figure} size={plate - 4} live={preview.on} />
         </Hud>
       </Pressable>

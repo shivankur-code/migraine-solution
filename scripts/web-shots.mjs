@@ -12,6 +12,8 @@ const problems = [];
 async function run(name, viewport) {
   const page = await browser.newPage({ viewport, deviceScaleFactor: 2 });
   page.on('pageerror', e => problems.push(`${name}: ${e.message}`));
+  // Phone: the bottom tab bar (test ids); desktop: the sidebar (tabs by name).
+  const tab = (id, name) => page.getByTestId(id).or(page.getByRole('tab', { name, exact: true })).first();
   const shot = async (label, wait = 1200) => { await page.waitForTimeout(wait); await page.screenshot({ path: `${out}/${name}-${label}.png` }); };
   await page.goto(base, { waitUntil: 'networkidle' });
   await page.getByText('Make my sound').waitFor({ timeout: 30000 });
@@ -34,11 +36,11 @@ async function run(name, viewport) {
   await shot('05-playing', 6000);
   await page.getByLabel('Fade to silence').click();
   await shot('06-faded', 3000);
-  await page.getByRole('tab', { name: 'My sound' }).or(page.getByText('My sound', { exact: true }).last()).first().click();
-  await page.getByText('Your sound').waitFor();
+  await tab('tab-sound', 'My sound').click();
+  await page.getByText('Your sound', { exact: true }).waitFor();
   await shot('07-my-sound', 3000);
-  await page.getByRole('tab', { name: 'Journal' }).or(page.getByText('Journal', { exact: true }).last()).first().click();
-  await page.getByText('Your journal').waitFor();
+  await tab('tab-journal', 'Journal').click();
+  await page.getByText('Your journal', { exact: true }).waitFor();
   await shot('08-journal', 2500);
   await page.close();
 }

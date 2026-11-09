@@ -16,7 +16,7 @@ export function Hud({ size, children, tl, tr, bl, br, ticks = true }: {
   const arm = 14, pad = 6;
   const corner = (pos: object, edges: object) => <View style={[{ position: 'absolute', width: arm, height: arm, borderColor: LINE }, pos, edges]} />;
   const label = (text: string | undefined, pos: object, align: 'left' | 'right') => text
-    ? <Text numberOfLines={1} style={[{ position: 'absolute', color: colors.muted, fontSize: 11.5, letterSpacing: 1.8, textTransform: 'uppercase', textAlign: align, maxWidth: size * 0.6 }, pos]}>{text}</Text>
+    ? <Text numberOfLines={1} style={[{ position: 'absolute', color: colors.muted, fontSize: 11.5, letterSpacing: 1.8, textTransform: 'uppercase', textAlign: align, maxWidth: size * 0.48 }, pos]}>{text}</Text>
     : null;
   return (
     <View style={{ width: size + pad * 2, height: size + pad * 2 + 36, alignItems: 'center', justifyContent: 'center' }}>
