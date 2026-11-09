@@ -11,6 +11,9 @@ import { freshProfile, lowerState, recipeFor, SOFTER_DB, type Profile, type Stat
 import { loadJournal, loadOnboarded, loadProfile, loadQuietMode, saveJournal, saveOnboarded, saveProfile, saveQuietMode, type Session } from '../lib/storage';
 import { Onboarding } from '../components/Onboarding';
 import { textureName } from '../components/Studio';
+import { Cymatics } from '../components/Cymatics';
+import { Hud } from '../components/Hud';
+import { figureFor } from '../lib/cymatics';
 import * as player from '../lib/player';
 import { loadActivity, summarize, track } from '../lib/activity';
 import { Button, Card, Ionicons, Screen, Segmented, tap, tick, type IconName, Columns, useWide } from '../lib/ui';
@@ -179,6 +182,7 @@ export default function QuietRoom() {
   const wide = useWide();
   const orbSize = wide ? 340 : 248, coreSize = wide ? 256 : 186;
   const orbOn = playingNow;
+  const figure = useMemo(() => figureFor(playing === 'softer' ? recipes.softer : recipes.comfort), [recipes, playing]);
   const mode = STATES.find(x => x.value === state)!;
   const timerShort = timer === '0' ? 'No timer' : timer === '60' ? '1 hour' : `${timer} min`;
   const timerLabel = timer === '0' ? 'Plays until you stop it' : `Fades out after ${timer === '60' ? '1 hour' : `${timer} minutes`}`;
@@ -214,19 +218,23 @@ export default function QuietRoom() {
 
         {/* The one big control */}
         <View style={{ alignItems: 'center', paddingTop: 8, gap: 14 }}>
+          <Hud size={orbSize} tl={textureName(recipes.comfort.texture)} tr={mode.label} bl={`Figure ${figure.n} · ${figure.m}`} br={timerShort}>
           <Pressable
             accessibilityRole="button" accessibilityLabel={preparing ? 'Getting ready' : orbOn ? 'Fade to silence' : 'Play my sound'}
             onPressIn={tap} onPress={() => (orbOn ? stopSound() : playSound('comfort'))}
             style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.97 : 1 }] })}>
             <View style={{ width: orbSize, height: orbSize, alignItems: 'center', justifyContent: 'center' }}>
               <Animated.View style={{ position: 'absolute', width: orbSize, height: orbSize, borderRadius: orbSize / 2, backgroundColor: `${dim.glow}0.10)`, opacity: orbOn ? haloOpacity : 0.35, transform: [{ scale: orbOn ? haloScale : 1 }] }} />
-              <View style={{ width: coreSize, height: coreSize, borderRadius: coreSize / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: `${dim.glow}0.08)`, borderWidth: 1, borderColor: `${dim.glow}0.22)` }}>
-                <Ionicons name={orbOn ? 'pause' : 'play'} size={40} color="#9fbb93" style={{ marginLeft: orbOn ? 0 : 5 }} />
-                <Text style={{ color: dim.text, fontSize: 14.5, marginTop: 8 }}>{preparing ? 'Getting ready…' : orbOn ? 'Tap to fade out' : 'My sound'}</Text>
+              <View style={{ position: 'absolute', width: coreSize, height: coreSize, borderRadius: coreSize / 2, backgroundColor: `${dim.glow}0.05)`, borderWidth: 1, borderColor: `${dim.glow}0.18)` }} />
+              {/* Loose dust while it's quiet; press play and it gathers into this sound's figure. */}
+              <Cymatics figure={orbOn ? figure : null} size={coreSize - 10} live={orbOn && !autoDim} />
+              <View style={{ position: 'absolute', width: 66, height: 66, borderRadius: 33, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(7,11,10,0.78)', borderWidth: 1, borderColor: `${dim.glow}0.28)` }}>
+                <Ionicons name={orbOn ? 'pause' : 'play'} size={28} color="#9fbb93" style={{ marginLeft: orbOn ? 0 : 4 }} />
               </View>
             </View>
           </Pressable>
-          <Text style={{ color: dim.soft, fontSize: 13, textAlign: 'center' }}>{`${textureName(recipes.comfort.texture)} · ${mode.label} · ${timerShort}`}</Text>
+          </Hud>
+          <Text style={{ color: dim.text, fontSize: 14.5, textAlign: 'center' }}>{preparing ? 'Getting ready…' : orbOn ? 'Tap to fade out' : 'Tap to play your sound'}</Text>
         </View>
         </>} right={<>
 

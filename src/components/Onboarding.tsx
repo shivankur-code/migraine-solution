@@ -1,14 +1,17 @@
 // First-run setup: three taps and one dial, about 30 seconds. Every step can be skipped, and the
 // sound plays while you choose, so people decide by ear rather than by reading.
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, Text, View } from 'react-native';
+import { Animated, Pressable, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import type { Profile } from '../lib/profile';
+import { recipeFor, type Profile } from '../lib/profile';
+import { figureFor } from '../lib/cymatics';
+import { Cymatics } from './Cymatics';
+import { Hud } from './Hud';
 import { colors, fonts } from '../lib/theme';
 import { Button, Ionicons, tap, useReduceMotion } from '../lib/ui';
 import { track } from '../lib/activity';
-import { PreviewButton, ProfileDial, TextureTiles, Tile, usePreview, withHardest, type Hardest } from './Studio';
+import { DIALS, PreviewButton, ProfileDial, TextureTiles, Tile, textureName, usePreview, withHardest, type Hardest } from './Studio';
 
 const HARDEST: { value: Hardest; label: string; sub: string; icon: 'sparkles-outline' | 'pulse-outline' | 'flash-outline' | 'ellipse-outline' }[] = [
   { value: 'high', label: 'Hiss and high sounds', sub: 'Kettles, static, squeaks', icon: 'sparkles-outline' },
@@ -32,13 +35,22 @@ export function Onboarding({ profile, onChange, onDone }: { profile: Profile; on
   }, [step, reduce]);
 
   const update = (p: Profile) => { onChange(p); preview.update(p); };
+  const sound = recipeFor(profile, 'warning').recipe;
+  const figure = figureFor(sound);
+  // On the welcome screen the dust gathers into a figure a moment after it appears.
+  const [formed, setFormed] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setFormed(true), 700); return () => clearTimeout(t); }, []);
   const go = (n: number) => { track('onboarding_step', { step: n }); setStep(n); };
   const finish = (how: 'done' | 'skipped') => { preview.stop(); track('onboarding_done', { how, step }); onDone(); };
 
   const body = [
     // 0 · Welcome
     <View key="w" style={{ flex: 1, justifyContent: 'center', gap: 28 }}>
-      <BreathingOrb />
+      <View style={{ alignItems: 'center' }}>
+        <Hud size={200} tl="Still" tr="Cymatics" bl={formed ? `Figure ${figure.n} · ${figure.m}` : 'Resting'} br={textureName(sound.texture)}>
+          <Cymatics figure={formed ? figure : null} size={196} live={formed} />
+        </Hud>
+      </View>
       <View style={{ gap: 10 }}>
         <Text style={{ color: colors.ink, fontFamily: fonts.display, fontSize: 44, letterSpacing: -0.8, textAlign: 'center' }}>Still</Text>
         <Text style={{ color: colors.muted, fontSize: 17, lineHeight: 25, textAlign: 'center' }}>A soft sound for migraine days.{'\n'}Made on your phone, just for you.</Text>
@@ -64,9 +76,13 @@ export function Onboarding({ profile, onChange, onDone }: { profile: Profile; on
     </View>,
     // 3 · One dial
     <View key="d" style={{ gap: 22, alignItems: 'center' }}>
-      <Title kicker="3 of 3" title="Turn it to taste" sub="Drag the dial, or tap it. Deeper is usually calmer." />
-      <ProfileDial which="tone" profile={profile} onChange={update} size={176} />
-      <PreviewButton on={preview.on} busy={preview.busy} onPress={() => preview.toggle(profile)} />
+      <Title kicker="3 of 3" title="Turn it to taste" sub="Turn the dial and watch your sound take shape. Deeper is usually calmer." />
+      <Pressable accessibilityRole="button" accessibilityLabel={preview.on ? 'Stop listening' : 'Listen'} onPressIn={tap} onPress={() => preview.toggle(profile)}>
+        <Hud size={150} tl={DIALS.tone.stops[DIALS.tone.index(recipeFor(profile, 'normal').recipe)]} tr={`${figure.n} · ${figure.m}`} bl={preview.on ? (preview.busy ? 'Tuning' : 'Playing') : 'Tap to listen'} br={textureName(sound.texture)} ticks={false}>
+          <Cymatics figure={figure} size={146} live={preview.on} />
+        </Hud>
+      </Pressable>
+      <ProfileDial which="tone" profile={profile} onChange={update} size={132} />
     </View>,
   ][step];
 
@@ -117,30 +133,6 @@ function Dots({ step }: { step: number }) {
   return (
     <View style={{ flexDirection: 'row', gap: 6 }} accessibilityLabel={`Step ${step + 1} of 4`}>
       {[0, 1, 2, 3].map(i => <View key={i} style={{ width: i === step ? 18 : 6, height: 6, borderRadius: 3, backgroundColor: i <= step ? colors.accent : 'rgba(255,255,255,0.14)' }} />)}
-    </View>
-  );
-}
-
-/** A slow glow, about six breaths a minute. */
-function BreathingOrb() {
-  const breath = useRef(new Animated.Value(0)).current;
-  const reduce = useReduceMotion();
-  useEffect(() => {
-    if (reduce) { breath.setValue(0.5); return; }
-    const loop = Animated.loop(Animated.sequence([
-      Animated.timing(breath, { toValue: 1, duration: 4500, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-      Animated.timing(breath, { toValue: 0, duration: 5500, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-    ]));
-    loop.start();
-    return () => loop.stop();
-  }, [reduce]);
-  return (
-    <View style={{ alignItems: 'center', justifyContent: 'center', height: 200 }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <Animated.View style={{ position: 'absolute', width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(160,190,150,0.10)',
-        opacity: breath.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0.8] }), transform: [{ scale: breath.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1.06] }) }] }} />
-      <View style={{ width: 132, height: 132, borderRadius: 66, backgroundColor: 'rgba(160,190,150,0.08)', borderWidth: 1, borderColor: 'rgba(160,190,150,0.22)', alignItems: 'center', justifyContent: 'center' }}>
-        <Ionicons name="moon-outline" size={36} color={colors.moon} />
-      </View>
     </View>
   );
 }

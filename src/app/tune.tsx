@@ -3,11 +3,14 @@
 import { useCallback, useState, type ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
-import { freshProfile, type Profile } from '../lib/profile';
+import { freshProfile, recipeFor, type Profile } from '../lib/profile';
+import { figureFor } from '../lib/cymatics';
+import { Cymatics } from '../components/Cymatics';
+import { Hud } from '../components/Hud';
 import { loadProfile, saveOnboarded, saveProfile } from '../lib/storage';
 import * as player from '../lib/player';
 import { Tests } from '../components/build/Tests';
-import { PreviewButton, ProfileDial, TextureTiles, usePreview } from '../components/Studio';
+import { DIALS, PreviewButton, ProfileDial, TextureTiles, textureName, usePreview } from '../components/Studio';
 import { AiReviewCard } from '../components/AiReviewCard';
 import { SupportCard } from '../components/SupportCard';
 import { AccountCard, SharingCard } from '../components/AccountCard';
@@ -29,6 +32,11 @@ export default function MySound() {
 
   const update = (next: Profile) => { setProfile(next); saveProfile(next); preview.update(next); };
   const hatesHum = (profile.intake.dislikes || []).includes('hum');
+  // The figure follows the sound the dials make; the labels name each dial's current setting.
+  const normal = recipeFor(profile, 'normal').recipe;
+  const figure = figureFor(recipeFor(profile, 'warning').recipe);
+  const word = (k: keyof typeof DIALS) => DIALS[k].stops[DIALS[k].index(normal)];
+  const plate = wide ? 300 : 220;
 
   const startOver = () => confirmAction('Set up your sound again?', 'Your dials and choices go back to the start. Your journal stays.', 'Start over', async () => {
     preview.stop();
@@ -45,9 +53,14 @@ export default function MySound() {
       <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
         <View style={{ flex: 1, gap: 4 }}>
           <H1>Your sound</H1>
-          <Muted>Turn the dials while it plays. Changes save by themselves.</Muted>
+          <Muted>Turn the dials and watch your sound take shape. Changes save by themselves.</Muted>
         </View>
       </View>
+      <Pressable accessibilityRole="button" accessibilityLabel={preview.on ? 'Stop listening' : 'Listen'} onPressIn={tap} onPress={() => preview.toggle(profile)} style={{ alignSelf: 'center' }}>
+        <Hud size={plate} tl={textureName(normal.texture)} tr={`Tone ${word('tone')}`} bl={`Hum ${word('hum')} · ${word('motion')}`} br={`Space ${word('space')}`}>
+          <Cymatics figure={figure} size={plate - 4} live={preview.on} />
+        </Hud>
+      </Pressable>
       <PreviewButton on={preview.on} busy={preview.busy} onPress={() => preview.toggle(profile)} />
 
       <TextureTiles value={profile.intake.texture} onPick={t => {

@@ -52,9 +52,25 @@ function start(key: string, loop: boolean, gainNow: number): Voice | null {
   const src = c.createBufferSource(), gain = c.createGain();
   src.buffer = b; src.loop = loop;
   gain.gain.setValueAtTime(gainNow, c.currentTime);
-  src.connect(gain).connect(c.destination);
+  src.connect(gain).connect(meter(c));
   src.start();
   return { src, gain };
+}
+
+// A meter between the sound and the speakers, so the screen can move with what is heard.
+let analyser: AnalyserNode | null = null;
+let samples: Float32Array<ArrayBuffer> | null = null;
+function meter(c: AudioContext): AudioNode {
+  if (!analyser) { analyser = c.createAnalyser(); analyser.fftSize = 1024; analyser.connect(c.destination); samples = new Float32Array(analyser.fftSize); }
+  return analyser;
+}
+/** How loud the sound is right now, 0 to about 1 (root mean square). Null before anything plays. */
+export function level(): number | null {
+  if (!analyser || !samples || !voice) return null;
+  analyser.getFloatTimeDomainData(samples);
+  let sum = 0;
+  for (let i = 0; i < samples.length; i++) sum += samples[i] * samples[i];
+  return Math.sqrt(sum / samples.length);
 }
 
 /** Start a sound. levelDb is relative to the reference loudness; fades in over fadeIn seconds. */
