@@ -123,11 +123,11 @@ void main() {
   float r = length((q - uPointer) * vec2(uAspect, 1.0));
   float near = uPointerOn * exp(-r * r / 0.22);
   float g = max(uGlow, near);
-  float a = mix(0.45, 0.1 + 1.5 * onLine, g) * (1.0 + 0.5 * near);
+  float a = mix(0.6, 0.08 + 1.6 * onLine, g) * (1.0 + 0.5 * near);
   q = disturb(q, 1.6);
   gl_Position = vec4(q, 0.0, 1.0);
-  gl_PointSize = (1.0 + 1.3 * s.z) * uDpr;
-  vAlpha = a * mix(0.05, 0.13, s.z) * uLevel;
+  gl_PointSize = (1.2 + 1.6 * s.z) * uDpr;
+  vAlpha = a * mix(0.12, 0.3, s.z) * uLevel;
   vec3 deep = vec3(0.54, 0.41, 0.26), lamp = vec3(0.76, 0.60, 0.38), airy = vec3(0.91, 0.89, 0.85);
   vColor = mix(mix(deep, lamp, uTone), airy, step(0.82, s.w) * 0.5);
 }`;
