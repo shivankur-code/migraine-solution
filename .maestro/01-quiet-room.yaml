@@ -51,11 +51,12 @@ name: Quiet room
     visible: "Fade to silence"
     timeout: 12000
 - takeScreenshot: 02-playing
-- extendedWaitUntil:
-    visible: "this text never appears"
-    timeout: 4000
-    optional: true
-# Safety net: if the 15 s auto-dim is already up, wake it first (while dimmed, a touch only wakes).
+# Fade out. On the slow CI simulator a tap on the lamp is occasionally not registered (each look-up
+# there takes 8-10 s while the room animates), so if the sound is still playing afterwards, wake the
+# screen if it dimmed and tap once more. A session only needs to last 3 s to be recorded.
+- tapOn:
+    text: "Fade to silence"
+    waitToSettleTimeoutMs: 500
 - runFlow:
     when:
       visible: "Screen dimmed. Tap to brighten."
@@ -66,9 +67,13 @@ name: Quiet room
       - extendedWaitUntil:
           notVisible: "Screen dimmed. Tap to brighten."
           timeout: 8000
-- tapOn:
-    text: "Fade to silence"
-    waitToSettleTimeoutMs: 500
+- runFlow:
+    when:
+      visible: "Fade to silence"
+    commands:
+      - tapOn:
+          text: "Fade to silence"
+          waitToSettleTimeoutMs: 500
 - extendedWaitUntil:
     visible: "Optional: how did that go?"
     timeout: 10000
