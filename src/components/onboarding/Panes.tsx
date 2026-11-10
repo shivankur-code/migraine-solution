@@ -46,7 +46,7 @@ export function WelcomePane({ onStart, onSkip }: { onStart: () => void; onSkip: 
   return (
     <View style={styles.pane}>
       <View style={styles.welcome}>
-        <Hud size={180} tl="Still" tr="Cymatics" bl={formed ? `Figure ${figure.n} · ${figure.m}` : 'Resting'} br="Rain" ticks={false}>
+        <Hud size={180} tl="Still" tr="Cymatics" bl={formed ? `${figure.n} · ${figure.m}` : 'Resting'} br="Rain" ticks={false}>
           <Cymatics figure={formed ? figure : null} size={176} live={formed} />
         </Hud>
         <Mark size={36} />
