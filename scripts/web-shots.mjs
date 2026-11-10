@@ -30,8 +30,8 @@ async function run(name, viewport) {
     // The background changes on its own every 14 s: catch the next texture too.
     await shot('landing-later', 15000);
     await page.screenshot({ path: `${out}/${name}-landing-full.png`, fullPage: true });
-    await page.evaluate(() => localStorage.setItem('still.welcomed', '1'));
-    await page.goto(base, { waitUntil: 'networkidle' });
+    // Every visit to the front door opens the welcome page; its button leads into the room.
+    await page.getByText('Open the quiet room').first().click();
   }
   await page.getByText('Make my sound').waitFor({ timeout: 30000 });
   await shot('00-welcome', 2500);

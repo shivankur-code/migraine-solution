@@ -222,7 +222,7 @@ export default function QuietRoom() {
   // figure while it plays. Few grains and low opacity, so the room stays calm and readable.
   const { width: winW } = useWindowDimensions();
   const backdropSize = Math.max(winW, height);
-  const backdrop = <Cymatics figure={playingNow ? figure : null} size={backdropSize} live={playingNow && !dimmed} opacity={0.4} grains={Platform.OS === 'web' ? 2600 : 220} />;
+  const backdrop = <Cymatics figure={playingNow ? figure : null} size={backdropSize} live={playingNow && !dimmed} opacity={0.6} grains={Platform.OS === 'web' ? 2600 : 220} />;
   const lampSize = wide ? 320 : tablet ? 280 : height < 700 ? 208 : 232;
   const current = recipes[playing === 'softer' ? 'softer' : 'comfort'];
   const scene = sceneFor(current.texture);

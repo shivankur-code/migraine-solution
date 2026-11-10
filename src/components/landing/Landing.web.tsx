@@ -7,7 +7,7 @@ import { MotionConfig, motion, stagger, useInView, useReducedMotion, type Varian
 import { router, useIsFocused } from 'expo-router';
 import { colors, type SceneTexture } from '../../lib/theme';
 import { useAppFonts } from '../../lib/fonts';
-import { markWelcomed } from '../../lib/welcome';
+import { markWelcomed, noteWelcomeShown } from '../../lib/welcome';
 import { Instrument } from './Instrument.web';
 import './landing.css'; // typed by expo/types (referenced above); expo-env.d.ts is not committed
 
@@ -59,6 +59,8 @@ export function Landing() {
   const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => { if (leaveTimer.current) clearTimeout(leaveTimer.current); }, []);
+  // Arriving here (directly or by the front-door redirect) is this visit's welcome: the room won't bounce back.
+  useEffect(() => { noteWelcomeShown(); }, []);
 
   // Arriving on the route puts keyboard and screen-reader focus at the start of the content.
   useEffect(() => {

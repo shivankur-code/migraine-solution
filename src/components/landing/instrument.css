@@ -24,13 +24,13 @@
 
 /* The field fills the whole first screen, behind everything. */
 .hero-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -2; pointer-events: none; }
-/* Wide: a shade from the left, under the words. Narrow: from the bottom, under the words there. */
+/* A soft round shade under the centred words; the field stays bright everywhere else. */
 .hero-scrim {
   position: absolute; inset: 0; z-index: -1; pointer-events: none;
-  background: linear-gradient(90deg, rgba(11, 13, 18, 0.9) 0%, rgba(11, 13, 18, 0.66) 32%, rgba(11, 13, 18, 0) 58%);
+  background: radial-gradient(ellipse 46% 40% at 50% 50%, rgba(11, 13, 18, 0.8) 0%, rgba(11, 13, 18, 0.55) 48%, rgba(11, 13, 18, 0) 100%);
 }
 @media (max-width: 959px) {
-  .hero-scrim { background: linear-gradient(0deg, rgba(11, 13, 18, 0.94) 0%, rgba(11, 13, 18, 0.72) 36%, rgba(11, 13, 18, 0.1) 60%, rgba(11, 13, 18, 0) 100%); }
+  .hero-scrim { background: radial-gradient(ellipse 80% 42% at 50% 52%, rgba(11, 13, 18, 0.85) 0%, rgba(11, 13, 18, 0.6) 50%, rgba(11, 13, 18, 0) 100%); }
 }
 
 /* ---------------------------------------------------------------- top */
@@ -49,18 +49,17 @@
 
 /* ---------------------------------------------------------------- the words */
 .hero-copy {
-  align-self: center; display: flex; flex-direction: column; gap: 18px; max-width: 540px;
-  padding: 40px 0;
+  align-self: center; justify-self: center; display: flex; flex-direction: column; align-items: center;
+  gap: 18px; max-width: 640px; padding: 40px 0; text-align: center;
 }
-@media (max-width: 959px) { .hero-copy { align-self: end; padding: 32vh 0 24px; } }
 .hero-eyebrow { margin: 0; font-family: var(--hud-strong); font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--lamp); }
 .hero-h1 {
   margin: 0; font-family: var(--font-display, 'Fraunces_300Light'), serif; font-weight: 300;
   font-size: clamp(38px, 5.4vw, 68px); line-height: 1.04; letter-spacing: -0.01em; color: var(--ink);
   text-wrap: balance;
 }
-.hero-lead { margin: 0; font-family: var(--font-body, 'Inter_400Regular'), system-ui, sans-serif; font-size: 17px; line-height: 1.6; color: var(--ink2); max-width: 460px; }
-.hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; }
+.hero-lead { margin: 0; font-family: var(--font-body, 'Inter_400Regular'), system-ui, sans-serif; font-size: 17px; line-height: 1.6; color: var(--ink2); max-width: 500px; }
+.hero-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 6px; }
 .hero-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; padding: 0 24px;
   border-radius: 999px; border: 1px solid transparent; text-decoration: none; cursor: pointer;
@@ -79,19 +78,9 @@
 
 /* ---------------------------------------------------------------- foot */
 .hero-foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 24px; }
-.hero-now { display: flex; align-items: center; gap: 12px; }
+.hero-now { margin: 0; display: flex; align-items: center; gap: 12px; }
 .hero-now-label, .hero-now-name { font-family: var(--hud); font-size: 11px; letter-spacing: 0.26em; text-transform: uppercase; color: var(--ink3); }
 .hero-now-name { color: var(--ink2); min-width: 54px; }
-.hero-dots { display: inline-flex; gap: 2px; }
-.hero-dot {
-  width: 28px; height: 44px; padding: 0; border: 0; background: none; position: relative; cursor: pointer;
-}
-.hero-dot::after {
-  content: ''; position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 3px;
-  background: var(--hairline-lit); transition: background-color 300ms ease, width 300ms var(--ease-out), margin 300ms var(--ease-out);
-}
-.hero-dot.is-on::after { background: var(--lamp); width: 18px; margin-left: -9px; }
-.hero-toggles { display: flex; gap: 4px; }
 .hero-quiet {
   min-height: 44px; padding: 0 10px; background: none; border: 0; cursor: pointer; color: var(--ink2);
   font-family: var(--hud); font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
@@ -105,4 +94,4 @@
   .hero-btn-ghost:hover { border-color: var(--ink3); }
 }
 .hero a:focus-visible, .hero button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
-@media (prefers-reduced-motion: reduce) { .hero, .hero-btn, .hero-dot::after { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .hero, .hero-btn { transition: none; } }
