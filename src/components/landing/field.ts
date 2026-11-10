@@ -62,7 +62,7 @@ vec4 fan(vec4 s, float t) {
   if (s.w > 0.86) {                                   // the ring
     float ang = s.x * 6.2831853 + rot * 0.15;
     float r = R * (1.04 + (s.y - 0.5) * 0.025);
-    return vec4(cos(ang) * r, sin(ang) * r, (s.z - 0.5) * 0.05, 0.45);
+    return vec4(cos(ang) * r, sin(ang) * r, (s.z - 0.5) * 0.05, 0.75);
   }
   if (s.w < 0.05) {                                   // the hub
     float ang = s.x * 6.2831853, r = 0.055 * R * sqrt(s.y);
@@ -70,9 +70,9 @@ vec4 fan(vec4 s, float t) {
   }
   float blade = floor(s.z * 5.0);
   float r = (0.1 + 0.9 * sqrt(s.y)) * R;
-  float sweep = mix(0.18, 0.5, r / R);                // wider towards the tip
+  float sweep = mix(0.06, 0.2, r / R);                // narrow, a little wider towards the tip
   float ang = blade * 1.2566371 + (r / R) * 1.9 - s.x * sweep + rot;
-  float a = fall(0.92, 1.0, r / R) * pow(1.0 - s.x, 1.6);
+  float a = min(1.0, 1.35 * fall(0.92, 1.0, r / R) * pow(1.0 - s.x, 0.7));
   return vec4(cos(ang) * r, sin(ang) * r, (fract(s.z * 5.0) - 0.5) * 0.2, a);
 }
 
@@ -217,11 +217,11 @@ function formJS(i: number, s: V4, t: number, P: FieldParams): V4 {
   }
   if (i === 2) {
     const rot = t * mix(0.04, 0.14, P.motion), R = 0.6 * mix(0.85, 1.1, P.space);
-    if (s[3] > 0.86) { const ang = s[0] * TAU + rot * 0.15, r = R * (1.04 + (s[1] - 0.5) * 0.025); return [Math.cos(ang) * r, Math.sin(ang) * r, (s[2] - 0.5) * 0.05, 0.45]; }
+    if (s[3] > 0.86) { const ang = s[0] * TAU + rot * 0.15, r = R * (1.04 + (s[1] - 0.5) * 0.025); return [Math.cos(ang) * r, Math.sin(ang) * r, (s[2] - 0.5) * 0.05, 0.75]; }
     if (s[3] < 0.05) { const ang = s[0] * TAU, r = 0.055 * R * Math.sqrt(s[1]); return [Math.cos(ang) * r, Math.sin(ang) * r, 0, 0.9]; }
     const blade = Math.floor(s[2] * 5), r = (0.1 + 0.9 * Math.sqrt(s[1])) * R;
-    const ang = blade * 1.2566371 + (r / R) * 1.9 - s[0] * mix(0.18, 0.5, r / R) + rot;
-    return [Math.cos(ang) * r, Math.sin(ang) * r, (fract(s[2] * 5) - 0.5) * 0.2, fall(0.92, 1, r / R) * Math.pow(1 - s[0], 1.6)];
+    const ang = blade * 1.2566371 + (r / R) * 1.9 - s[0] * mix(0.06, 0.2, r / R) + rot;
+    return [Math.cos(ang) * r, Math.sin(ang) * r, (fract(s[2] * 5) - 0.5) * 0.2, Math.min(1, 1.35 * fall(0.92, 1, r / R) * Math.pow(1 - s[0], 0.7))];
   }
   if (s[3] < 0.72) {
     const th = s[0] * TAU, ph = Math.acos(2 * s[1] - 1), R = 0.3 * (1 + 0.012 * Math.sin(t * 0.5));
