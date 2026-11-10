@@ -6,14 +6,14 @@ import { createElement, useEffect, useMemo, useRef } from 'react';
 import { View } from 'react-native';
 import { gather, scatter, type Figure } from '../lib/cymatics';
 import { level } from '../lib/output';
-import { useReduceMotion } from '../lib/ui';
+import { useReducedMotion } from '../lib/motion';
 
 type Props = { figure: Figure | null; size: number; live?: boolean; pulse?: number; opacity?: number };
 
 export function Cymatics({ figure, size, live = false, pulse = 0, opacity = 1 }: Props) {
   const count = Math.round(Math.min(6000, Math.max(1200, size * size * 0.05)));
   const canvas = useRef<HTMLCanvasElement | null>(null);
-  const reduce = useReduceMotion();
+  const reduce = useReducedMotion();
   const target = useMemo(() => (figure ? gather(figure, count) : scatter(count)), [figure?.key, figure?.hum, figure?.spread, figure?.fuzz, count]);
   const state = useRef<{ x: Float32Array; v: Float32Array; k: Float32Array; raf: number; angle: number; t0: number } | null>(null);
   const props = useRef({ figure, live, reduce, opacity, target });

@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, View } from 'react-native';
 import { gather, scatter, type Figure } from '../lib/cymatics';
-import { useReduceMotion } from '../lib/ui';
+import { useReducedMotion } from '../lib/motion';
 
 type Props = { figure: Figure | null; size: number; live?: boolean; pulse?: number; opacity?: number };
 // Lamp-amber grains with every fifth one cream, the same mix as the landing page's point field.
@@ -13,7 +13,7 @@ const GRAIN = 'rgba(194,154,98,0.85)', GLINT = 'rgba(232,227,217,0.8)';
 
 export function Cymatics({ figure, size, live = false, pulse = 0, opacity = 1 }: Props) {
   const count = Math.round(Math.min(260, Math.max(110, size * 1.05)));
-  const reduce = useReduceMotion();
+  const reduce = useReducedMotion();
   const target = useMemo(() => (figure ? gather(figure, count) : scatter(count)), [figure?.key, figure?.hum, figure?.spread, figure?.fuzz, count]);
   const [pair, setPair] = useState({ from: target, to: target });
   const morph = useRef(new Animated.Value(1)).current;
