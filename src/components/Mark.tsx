@@ -1,6 +1,7 @@
-// The app mark: a circle resting on a horizon line. Decorative; the word "Still" always sits beside it.
+// The app mark: one wave at rest inside a plate, with the still point at its centre (sound settling
+// into stillness, as sand settles on a vibrating plate). Decorative; the word "Still" sits beside it.
 import { Platform } from 'react-native';
-import Svg, { Circle, Line } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 import { colors } from '../lib/theme';
 
 /**
@@ -16,8 +17,9 @@ export function Mark({ size = 24, color = colors.lamp, strokeWidth = 1.5 }: { si
   // Drawn in a 24-unit box so the stroke stays 1.5 px at every size (vector-effect keeps it from scaling).
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" pointerEvents="none" {...svgHidden}>
-      <Circle cx={12} cy={10.25} r={6.25} stroke={color} strokeWidth={strokeWidth} vectorEffect="non-scaling-stroke" />
-      <Line x1={2} y1={17.25} x2={22} y2={17.25} stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+      <Circle cx={12} cy={12} r={10} stroke={color} strokeWidth={strokeWidth * 0.75} opacity={0.55} vectorEffect="non-scaling-stroke" />
+      <Path d="M4.5 12c1.9-5.6 5.6-5.6 7.5 0s5.6 5.6 7.5 0" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+      <Circle cx={12} cy={12} r={1.5} fill={color} />
     </Svg>
   );
 }

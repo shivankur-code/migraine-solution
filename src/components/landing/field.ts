@@ -85,12 +85,60 @@ vec4 form(float i, vec4 s, float t) {
 }
 `;
 
+// The pointer stirs the field, in screen space: a soft bulge away from the cursor, slow rings round it
+// (about 0.25 Hz, never faster), and one widening ring from each click. Mirrored in JS as `disturbJS`.
+const POINTER_GLSL = /* glsl */ `
+uniform vec2 uPointer;
+uniform float uPointerOn, uAspect;
+uniform vec3 uPulse;
+vec2 disturb(vec2 q, float gain) {
+  vec2 asp = vec2(uAspect, 1.0);
+  vec2 d = (q - uPointer) * asp;
+  float r = length(d);
+  vec2 dir = d / max(r, 0.0001);
+  float push = 0.05 * exp(-r * r / 0.05) + 0.012 * sin(r * 26.0 - uTime * 1.6) * exp(-r * r / 0.18);
+  vec2 dp = (q - uPulse.xy) * asp;
+  float rp = length(dp);
+  float w = exp(-pow((rp - uPulse.z * 0.55) / 0.07, 2.0)) * (1.0 - smoothstep(0.0, 2.6, uPulse.z)) * 0.05;
+  return q + gain * (dir * push * uPointerOn + (dp / max(rp, 0.0001)) * w) / asp;
+}
+`;
+
+// The dust: dim grains across the whole page. Round the cursor, and everywhere while the sound plays,
+// only the grains on the nodal lines of one large Chladni figure stay lit: cymatics, page-wide.
+const VS_DUST = /* glsl */ `#version 300 es
+precision highp float;
+layout(location = 0) in vec4 aSeed;
+uniform float uTime, uTone, uLevel, uGlow, uDpr;
+${POINTER_GLSL}
+out float vAlpha;
+out vec3 vColor;
+void main() {
+  vec4 s = aSeed;
+  vec2 q = s.xy * 2.0 - 1.0;
+  q += 0.016 * vec2(sin(uTime * 0.11 + s.z * 40.0), cos(uTime * 0.09 + s.w * 37.0));
+  vec2 c = q * vec2(uAspect, 1.0) * 1.5707963;
+  float f = cos(3.0 * c.x) * cos(5.0 * c.y) - cos(5.0 * c.x) * cos(3.0 * c.y);
+  float onLine = 1.0 - smoothstep(0.05, 0.4, abs(f));
+  float r = length((q - uPointer) * vec2(uAspect, 1.0));
+  float near = uPointerOn * exp(-r * r / 0.22);
+  float g = max(uGlow, near);
+  float a = mix(0.45, 0.1 + 1.5 * onLine, g) * (1.0 + 0.5 * near);
+  q = disturb(q, 1.6);
+  gl_Position = vec4(q, 0.0, 1.0);
+  gl_PointSize = (1.0 + 1.3 * s.z) * uDpr;
+  vAlpha = a * mix(0.05, 0.13, s.z) * uLevel;
+  vec3 deep = vec3(0.54, 0.41, 0.26), lamp = vec3(0.76, 0.60, 0.38), airy = vec3(0.91, 0.89, 0.85);
+  vColor = mix(mix(deep, lamp, uTone), airy, step(0.82, s.w) * 0.5);
+}`;
+
 const VS = /* glsl */ `#version 300 es
 precision highp float;
-in vec4 aSeed;
+layout(location = 0) in vec4 aSeed;
 uniform float uTime, uProgress, uFrom, uTo;
 uniform float uTone, uHum, uMotion, uSpace, uLevel, uGlow, uDpr;
 uniform vec2 uCenter, uScale, uTilt;
+${POINTER_GLSL}
 out float vAlpha;
 out vec3 vColor;
 ${FORMS_GLSL}
@@ -111,7 +159,7 @@ void main() {
   p = vec3(cy * p.x + sy * p.z, p.y, -sy * p.x + cy * p.z);
   p = vec3(p.x, cx * p.y - sx * p.z, sx * p.y + cx * p.z);
   float f = 2.2 / (2.2 - p.z);
-  gl_Position = vec4(uCenter + p.xy * f * uScale, 0.0, 1.0);
+  gl_Position = vec4(disturb(uCenter + p.xy * f * uScale, 1.0), 0.0, 1.0);
   gl_PointSize = (1.4 + 1.4 * s.z + uGlow * 0.6) * uDpr * f;
   // Visible as points, never as a glare: even the densest overlap stays well below full lamp colour.
   vAlpha = alpha * mix(0.12, 0.28, s.z) * uLevel * (1.0 + 0.5 * uGlow) * mix(0.75, 1.0, uTone);
@@ -183,6 +231,10 @@ export type Field = {
   setGlow(on: boolean, seconds: number): void;
   setCalm(calm: boolean): void;
   setTilt(x: number, y: number): void;
+  /** The cursor, in canvas pixels. `active` false lets the stir die away. */
+  setPointer(x: number, y: number, active: boolean): void;
+  /** One slow ring widening from a click or tap, in canvas pixels. */
+  pulse(x: number, y: number): void;
   setFrame(rect: { x: number; y: number; w: number; h: number }): void;
   setTrackers(t: TrackerEl[]): void;
   destroy(): void;
@@ -198,23 +250,33 @@ export function createField(canvas: HTMLCanvasElement, opts: { count: number; re
     if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) { console.warn(gl.getShaderInfoLog(sh)); return null; }
     return sh;
   };
-  const vs = compile(gl.VERTEX_SHADER, VS), fs = compile(gl.FRAGMENT_SHADER, FS);
-  if (!vs || !fs) return null;
-  const prog = gl.createProgram()!;
-  gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
-  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) { console.warn(gl.getProgramInfoLog(prog)); return null; }
-  gl.useProgram(prog);
+  const fs = compile(gl.FRAGMENT_SHADER, FS);
+  const link = (vsSrc: string) => {
+    const v = compile(gl.VERTEX_SHADER, vsSrc);
+    if (!v || !fs) return null;
+    const pr = gl.createProgram()!;
+    gl.attachShader(pr, v); gl.attachShader(pr, fs); gl.linkProgram(pr);
+    if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) { console.warn(gl.getProgramInfoLog(pr)); return null; }
+    return { pr, v };
+  };
+  const main = link(VS);
+  if (!main || !fs) return null;
+  const prog = main.pr, vs = main.v;
+  // The dust is a nicety: if it fails to build, the field still runs without it.
+  const dust = link(VS_DUST);
 
   const count = opts.count;
+  const dustCount = Math.min(count, count > 20000 ? 14000 : 7000);
   const seed = seeds(count);
   const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
   const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
   gl.bufferData(gl.ARRAY_BUFFER, seed, gl.STATIC_DRAW);
-  const loc = gl.getAttribLocation(prog, 'aSeed');
-  gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 4, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 4, gl.FLOAT, false, 0, 0);
   gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE); gl.disable(gl.DEPTH_TEST);
-  const U = (n: string) => gl.getUniformLocation(prog, n);
-  const u = { time: U('uTime'), progress: U('uProgress'), from: U('uFrom'), to: U('uTo'), tone: U('uTone'), hum: U('uHum'), motion: U('uMotion'), space: U('uSpace'), level: U('uLevel'), glow: U('uGlow'), dpr: U('uDpr'), center: U('uCenter'), scale: U('uScale'), tilt: U('uTilt') };
+  const names = ['time', 'progress', 'from', 'to', 'tone', 'hum', 'motion', 'space', 'level', 'glow', 'dpr', 'center', 'scale', 'tilt', 'pointer', 'pointerOn', 'aspect', 'pulse'] as const;
+  const locate = (pr: WebGLProgram) => Object.fromEntries(names.map(n => [n, gl.getUniformLocation(pr, 'u' + n[0].toUpperCase() + n.slice(1))])) as Record<(typeof names)[number], WebGLUniformLocation | null>;
+  const u = locate(prog);
+  const ud = dust ? locate(dust.pr) : null;
 
   // State. Everything that changes per frame lives here, never in React.
   let params: FieldParams = { tone: 0.33, hum: 0, motion: 0.33, space: 0.5 };
@@ -226,6 +288,18 @@ export function createField(canvas: HTMLCanvasElement, opts: { count: number; re
   let frame = { x: 0, y: 0, w: 1, h: 1 }, cw = 1, ch = 1, dpr = 1;
   let trackers: TrackerEl[] = [];
   let dirty = true;
+  // Pointer, in clip space. `ptrOn` eases up while the cursor moves and away about 2.5 s after it stops.
+  let ptr = [0, 0], ptrTarget = [0, 0], ptrOn = 0, ptrSeen = -1e9, ptrActive = false;
+  let pulseAt = [0, 0], pulseAge = 99;
+  const toClip = (x: number, y: number) => [(x / cw) * 2 - 1, 1 - (y / ch) * 2];
+  const disturbJS = (qx: number, qy: number): [number, number] => {
+    const asp = cw / ch;
+    const dx = (qx - ptr[0]) * asp, dy = qy - ptr[1], r = Math.hypot(dx, dy) || 1e-4;
+    const push = (0.05 * Math.exp(-r * r / 0.05) + 0.012 * Math.sin(r * 26 - time * 1.6) * Math.exp(-r * r / 0.18)) * ptrOn;
+    const px = (qx - pulseAt[0]) * asp, py = qy - pulseAt[1], rp = Math.hypot(px, py) || 1e-4;
+    const w = Math.exp(-(((rp - pulseAge * 0.55) / 0.07) ** 2)) * (1 - smooth(0, 2.6, pulseAge)) * 0.05;
+    return [qx + ((dx / r) * push + (px / rp) * w) / asp, qy + (dy / r) * push + (py / rp) * w];
+  };
   const TRANSITION_S = 2.6;
 
   const resize = () => {
@@ -243,7 +317,9 @@ export function createField(canvas: HTMLCanvasElement, opts: { count: number; re
     let x = cy * p[0] + sy * p[2], y = p[1], z = -sy * p[0] + cy * p[2];
     const y2 = cx * y - sx * z; z = sx * y + cx * z; y = y2;
     const f = 2.2 / (2.2 - z), s = Math.min(frame.w, frame.h) / 2 * 0.95;
-    return { x: frame.x + frame.w / 2 + x * f * s, y: frame.y + frame.h / 2 - y * f * s };
+    const px = frame.x + frame.w / 2 + x * f * s, py = frame.y + frame.h / 2 - y * f * s;
+    const c = toClip(px, py), q = disturbJS(c[0], c[1]);
+    return { x: ((q[0] + 1) / 2) * cw, y: ((1 - q[1]) / 2) * ch };
   };
 
   const placeTrackers = () => {
@@ -279,6 +355,18 @@ export function createField(canvas: HTMLCanvasElement, opts: { count: number; re
   const draw = () => {
     const s = Math.min(frame.w, frame.h) / 2 * 0.95;
     gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+    const pointerUniforms = (l: typeof u) => {
+      gl.uniform2f(l.pointer, ptr[0], ptr[1]); gl.uniform1f(l.pointerOn, ptrOn); gl.uniform1f(l.aspect, cw / ch);
+      gl.uniform3f(l.pulse, pulseAt[0], pulseAt[1], pulseAge);
+    };
+    if (dust && ud) {
+      gl.useProgram(dust.pr);
+      gl.uniform1f(ud.time, time); gl.uniform1f(ud.tone, params.tone); gl.uniform1f(ud.level, level); gl.uniform1f(ud.glow, glow); gl.uniform1f(ud.dpr, dpr);
+      pointerUniforms(ud);
+      gl.drawArrays(gl.POINTS, 0, dustCount);
+    }
+    gl.useProgram(prog);
+    pointerUniforms(u);
     gl.uniform1f(u.time, time); gl.uniform1f(u.progress, progress); gl.uniform1f(u.from, from); gl.uniform1f(u.to, to);
     gl.uniform1f(u.tone, params.tone); gl.uniform1f(u.hum, params.hum); gl.uniform1f(u.motion, params.motion); gl.uniform1f(u.space, params.space);
     gl.uniform1f(u.level, level); gl.uniform1f(u.glow, glow); gl.uniform1f(u.dpr, dpr);
@@ -306,6 +394,13 @@ export function createField(canvas: HTMLCanvasElement, opts: { count: number; re
     if (glow !== glowTarget) {
       const step = glowRate * dt;
       glow = glowTarget > glow ? Math.min(glowTarget, glow + step) : Math.max(glowTarget, glow - step); moving = true;
+    }
+    if (!calm) {
+      const kp = 1 - Math.exp(-dt / 0.18);
+      ptr = [ptr[0] + (ptrTarget[0] - ptr[0]) * kp, ptr[1] + (ptrTarget[1] - ptr[1]) * kp];
+      const want = ptrActive && now - ptrSeen < 2500 ? 1 : 0;
+      ptrOn += (want - ptrOn) * (1 - Math.exp(-dt / (want ? 0.5 : 1.2)));
+      if (pulseAge < 3) pulseAge += dt;
     }
     if (!calm) {
       const kt = 1 - Math.exp(-dt / 0.35);
@@ -344,14 +439,16 @@ export function createField(canvas: HTMLCanvasElement, opts: { count: number; re
     setParams(p) { params = p; wake(); },
     setLevel(l) { levelTarget = l; wake(); },
     setGlow(on, seconds) { glowTarget = on ? 1 : 0; glowRate = on ? 1 / Math.max(0.5, seconds) : 1 / 3; wake(); },
-    setCalm(c) { calm = c || opts.reduced; if (calm) { tiltTarget = [0, 0]; tilt = [0, 0]; if (progress < 1) { from = to; progress = 1; pending = null; } } wake(); },
+    setPointer(x, y, active) { if (calm) return; ptrTarget = toClip(x, y); if (ptrOn < 0.02) ptr = ptrTarget; ptrActive = active; if (active) ptrSeen = performance.now(); wake(); },
+    pulse(x, y) { if (calm) return; pulseAt = toClip(x, y); pulseAge = 0; wake(); },
+    setCalm(c) { calm = c || opts.reduced; if (calm) { ptrOn = 0; ptrActive = false; pulseAge = 99; tiltTarget = [0, 0]; tilt = [0, 0]; if (progress < 1) { from = to; progress = 1; pending = null; } } wake(); },
     setTilt(x, y) { if (calm) return; tiltTarget = [x, y]; wake(); },
     setFrame(r) { frame = r; wake(); },
     setTrackers(t) { trackers = t; wake(); },
     destroy() {
       running = false; if (raf) cancelAnimationFrame(raf);
       ro.disconnect(); io.disconnect(); document.removeEventListener('visibilitychange', onVis);
-      gl.deleteBuffer(buf); gl.deleteVertexArray(vao); gl.deleteProgram(prog); gl.deleteShader(vs); gl.deleteShader(fs);
+      gl.deleteBuffer(buf); gl.deleteVertexArray(vao); gl.deleteProgram(prog); gl.deleteShader(vs); gl.deleteShader(fs); if (dust) { gl.deleteProgram(dust.pr); gl.deleteShader(dust.v); }
     },
   };
 }

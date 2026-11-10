@@ -12,6 +12,8 @@ const problems = [];
 async function run(name, viewport) {
   const page = await browser.newPage({ viewport, deviceScaleFactor: 2 });
   page.on('pageerror', e => problems.push(`${name}: ${e.message}`));
+  // A shader that fails to build only warns; treat it as a failure here.
+  page.on('console', m => { if (m.type() === 'warning' && /ERROR: \d+:\d+/.test(m.text())) problems.push(`${name}: shader: ${m.text()}`); });
   // Phone: the bottom tab bar (test ids); desktop: the sidebar (tabs by name).
   const tab = (id, name) => page.getByTestId(id).or(page.getByRole('tab', { name, exact: true })).first();
   const shot = async (label, wait = 1200) => { await page.waitForTimeout(wait); await page.screenshot({ path: `${out}/${name}-${label}.png` }); };
@@ -20,6 +22,11 @@ async function run(name, viewport) {
   const landing = page.getByText('Skip all this', { exact: false });
   if (await landing.first().waitFor({ timeout: 15000 }).then(() => true, () => false)) {
     await shot('landing-top', 3500);
+    // Stir the dust with the cursor and ring it with a click, as a visitor would.
+    const { width, height } = page.viewportSize();
+    for (let i = 0; i <= 12; i++) await page.mouse.move(width * (0.25 + 0.04 * i), height * (0.35 + 0.02 * i), { steps: 4 });
+    await page.mouse.click(width * 0.62, height * 0.5);
+    await shot('landing-stirred', 900);
     await page.screenshot({ path: `${out}/${name}-landing-full.png`, fullPage: true });
     await page.evaluate(() => localStorage.setItem('still.welcomed', '1'));
     await page.goto(base, { waitUntil: 'networkidle' });
@@ -50,6 +57,10 @@ async function run(name, viewport) {
   await tab('tab-journal', 'Journal').click();
   await page.getByText('Your journal', { exact: true }).waitFor();
   await shot('08-journal', 2500);
+  // "Still" leads back to the welcome page from any page.
+  await page.getByLabel('Still: open the welcome page').first().click();
+  await page.getByText('Skip all this', { exact: false }).first().waitFor({ timeout: 15000 });
+  await shot('09-back-to-landing', 2500);
   await page.close();
 }
 

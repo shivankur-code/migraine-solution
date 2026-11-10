@@ -16,6 +16,8 @@ import { colors, radius, z, type Depth, type SceneTexture } from './theme';
 import { fonts, useAppFonts } from './fonts';
 import { cross, ease, spring, timing, useReducedMotion, useReducedTransparency } from './motion';
 import { Scene } from '../components/Scene';
+import { Mark } from '../components/Mark';
+import { router } from 'expo-router';
 
 export type IconName = keyof typeof Ionicons.glyphMap;
 // Nothing buzzes while sound plays except the stop and worse presses. The Quiet room mutes haptics for
@@ -523,7 +525,9 @@ export function Screen({ children, scrollRef, overlay, center, texture, depth = 
   const [viewH, setViewH] = useState(0);
   const column = wide ? styles.columnWide : Platform.OS === 'web' ? styles.columnPhoneWeb : null;
   // Phones keep clear of the floating tab bar (64 + 12 inset) and the home indicator.
-  const paddingTop = wide ? 48 : 20;
+  // Phone-width browsers get a small "Still" at the top: the way back to the welcome page (desktop has the sidebar's).
+  const brand = Platform.OS === 'web' && !wide;
+  const paddingTop = wide ? 48 : brand ? 60 : 20;
   const basePad = wide ? 72 : 96 + insets.bottom;
   // With extra padding the content keeps the height it had without it, so centring does not move it.
   const hold = bottomPad > 0 && viewH > 0 ? { minHeight: viewH - paddingTop - basePad } : null;
@@ -538,6 +542,13 @@ export function Screen({ children, scrollRef, overlay, center, texture, depth = 
             contentContainerStyle={[styles.screen, column, { paddingHorizontal: gutter, paddingTop, paddingBottom: basePad + bottomPad }, contentStyle]}>
             <Animated.View style={[styles.content, center && styles.centered, hold, fader]}>{children}</Animated.View>
           </ScrollView>
+          {brand ? (
+            <Press accessibilityRole="button" accessibilityLabel="Still: open the welcome page" onPress={() => router.navigate('/welcome')}
+              style={{ position: 'absolute', top: 8, left: gutter, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Mark size={22} />
+              <Text style={{ color: colors.ink2, fontFamily: fonts.ui, fontSize: 12.5, letterSpacing: 4, textTransform: 'uppercase' }}>Still</Text>
+            </Press>
+          ) : null}
         </SafeAreaView>
       </Inert>
       {overlay}

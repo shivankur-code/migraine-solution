@@ -2,7 +2,7 @@
 // rendered in a wide browser window (see _layout.tsx); phones and tablets never use it.
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { colors, radius, space } from '../lib/theme';
@@ -40,10 +40,11 @@ export function Sidebar({ state, descriptors, emitter, navigateToTab }: BottomTa
       <Material />
       <View style={styles.top}>
         <View style={styles.brand}>
-          <View style={styles.wordmark}>
+          {/* The name is the way back to the landing page, from every page. */}
+          <Press accessibilityRole="button" accessibilityLabel="Still: open the welcome page" onPress={() => router.navigate('/welcome')} style={styles.wordmark}>
             <Mark size={28} />
             <Title style={styles.still} accessibilityRole="none">Still</Title>
-          </View>
+          </Press>
           <Label>Sound for migraine days</Label>
         </View>
         <View accessibilityRole="tablist" style={styles.rows}>

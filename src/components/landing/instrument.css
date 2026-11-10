@@ -49,7 +49,11 @@
 .ins-word {
   margin: 0 0 10px; font-family: var(--hud-strong); font-size: 15px; line-height: 20px;
   letter-spacing: 0.6em; text-transform: uppercase; color: var(--ink);
+  display: flex; align-items: center; gap: 12px;
 }
+.ins-mark { color: var(--lamp); flex: none; }
+.ins-opt:disabled { opacity: 0.45; cursor: default; }
+@media (hover: hover) and (pointer: fine) { .ins { cursor: crosshair; } .ins a, .ins button, .ins label, .ins input { cursor: pointer; } }
 .ins-meta {
   margin: 0; font-family: var(--hud); font-size: 11px; line-height: 18px;
   letter-spacing: 0.24em; text-transform: uppercase; color: var(--ink3);
