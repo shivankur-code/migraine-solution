@@ -29,6 +29,16 @@ async function run(name, viewport) {
     await shot('landing-stirred', 900);
     // The background changes on its own every 14 s: catch the next texture too.
     await shot('landing-later', 15000);
+    if (name === 'desktop') {
+      // Hush comes next, then fan (about 43 s in): catch the fan as well.
+      await shot('landing-fan', 28500);
+      // The page scrolls inside its own container: step down it to see the sections below.
+      for (let i = 1; i <= 3; i++) {
+        await page.evaluate(() => { const el = document.querySelector('.lp'); if (el) el.scrollBy(0, window.innerHeight * 0.9); });
+        await shot(`landing-scroll-${i}`, 1500);
+      }
+      await page.evaluate(() => { const el = document.querySelector('.lp'); if (el) el.scrollTo(0, 0); });
+    }
     await page.screenshot({ path: `${out}/${name}-landing-full.png`, fullPage: true });
     // Every visit to the front door opens the welcome page; its button leads into the room.
     await page.getByText('Open the quiet room').first().click();
