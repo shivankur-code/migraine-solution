@@ -16,6 +16,7 @@ import { saveOnboarded, saveProfile, saveQuietMode } from '../../lib/storage';
 import * as player from '../../lib/player';
 import { DIALS, TEXTURES, withDial, type Texture } from '../Studio';
 import { createField, type Field } from './field';
+import { createChimes, type Chimes } from './chime';
 import './instrument.css';
 
 type DialKey = 'tone' | 'hum' | 'motion' | 'space';
@@ -27,6 +28,7 @@ const LEVELS: { value: State; label: string; field: number }[] = [
   { value: 'normal', label: 'Full', field: 1 },
 ];
 const CALM_KEY = 'still.calmView';
+const CHIME_KEY = 'still.chimes';
 const MINUS = '−';
 
 // Six points carry a bracket each. Indices are fixed so the same points are followed on every form.
@@ -67,6 +69,9 @@ export function Instrument({ onEnter, onHow, reduced, ctaHref }: {
   const [busy, setBusy] = useState(false);
   const [calm, setCalm] = useState(() => readCalm());
   const [tuneOpen, setTuneOpen] = useState(false);
+  const [chimesOn, setChimesOn] = useState(() => { try { return window.localStorage.getItem(CHIME_KEY) !== '0'; } catch { return true; } });
+  const [woken, setWoken] = useState(false);
+  const chimes = useRef<Chimes | null>(null);
   const [webgl, setWebgl] = useState(true);
   const [touch] = useState(() => typeof window !== 'undefined' && !window.matchMedia('(hover: hover) and (pointer: fine)').matches);
   // Fewer points on small screens: same look, a third of the work.
@@ -123,18 +128,43 @@ export function Instrument({ onEnter, onHow, reduced, ctaHref }: {
     try { window.localStorage.setItem(CALM_KEY, calm ? '1' : '0'); } catch {}
   }, [calm]);
 
-  // A little depth under a mouse. Never on touch, never in calm view or reduced motion.
+  // The page answers the hand. A mouse stirs the dust and tilts the form; a click or tap sends one
+  // slow ring through it. After the first click, moving also plays soft chimes (browsers allow sound
+  // only after a click). None of it in calm view or reduced motion.
+  const quiet = calm || reduced;
+  useEffect(() => {
+    chimes.current = createChimes();
+    return () => { chimes.current?.destroy(); chimes.current = null; };
+  }, []);
+  useEffect(() => {
+    chimes.current?.setEnabled(chimesOn && !quiet);
+    try { window.localStorage.setItem(CHIME_KEY, chimesOn ? '1' : '0'); } catch {}
+  }, [chimesOn, quiet]);
   useEffect(() => {
     const el = sectionRef.current;
-    if (!el || touch) return;
+    if (!el) return;
+    const at = (e: PointerEvent) => { const r = el.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top, w: r.width, h: r.height }; };
     const move = (e: PointerEvent) => {
-      const r = el.getBoundingClientRect();
-      fieldRef.current?.setTilt(((e.clientX - r.left) / r.width - 0.5) * 0.5, ((e.clientY - r.top) / r.height - 0.5) * 0.3);
+      if (e.pointerType === 'touch') return; // a finger scrolls; taps are handled below
+      const p = at(e);
+      fieldRef.current?.setTilt((p.x / p.w - 0.5) * 0.5, (p.y / p.h - 0.5) * 0.3);
+      fieldRef.current?.setPointer(p.x, p.y, true);
+      chimes.current?.touch(p.x / p.w, p.y / p.h);
     };
-    const leave = () => fieldRef.current?.setTilt(0, 0);
-    el.addEventListener('pointermove', move); el.addEventListener('pointerleave', leave);
-    return () => { el.removeEventListener('pointermove', move); el.removeEventListener('pointerleave', leave); };
-  }, [touch]);
+    const leave = () => { fieldRef.current?.setTilt(0, 0); fieldRef.current?.setPointer(0, 0, false); };
+    const down = (e: PointerEvent) => {
+      const target = e.target as HTMLElement | null;
+      chimes.current?.unlock();
+      setWoken(true);
+      // Controls keep their own job; the open field rings.
+      if (target?.closest('button, a, input, label')) return;
+      const p = at(e);
+      fieldRef.current?.pulse(p.x, p.y);
+      window.setTimeout(() => chimes.current?.touch(p.x / p.w, p.y / p.h, true), 30);
+    };
+    el.addEventListener('pointermove', move); el.addEventListener('pointerleave', leave); el.addEventListener('pointerdown', down);
+    return () => { el.removeEventListener('pointermove', move); el.removeEventListener('pointerleave', leave); el.removeEventListener('pointerdown', down); };
+  }, []);
 
   // Space only turns the page while the instrument fills the screen; further down it scrolls as usual.
   useEffect(() => {
@@ -225,7 +255,10 @@ export function Instrument({ onEnter, onHow, reduced, ctaHref }: {
   const levelLabel = LEVELS.find(l => l.value === level)!.label;
   const status = busy && !listening ? 'Preparing your sound on this device…'
     : listening ? `Listening · ${TEXTURES[form].label} · ${levelLabel} · fades in over ${recipe.fadeInS.toFixed(0)} s · Esc stops it`
-    : 'Silent until you press Listen. It starts quietly and fades in.';
+    : quiet ? 'Silent until you press Listen. It starts quietly and fades in.'
+    : woken ? (chimesOn ? 'Move to stir the dust and ring it softly. Listen fades the full sound in.' : 'Chimes off. Listen fades the full sound in.')
+    : touch ? 'Silent until you tap. Tap the dust to ring it; Listen fades the full sound in.'
+    : 'Silent until you click. Move to stir the dust; click to ring it.';
 
   const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -237,12 +270,12 @@ export function Instrument({ onEnter, onHow, reduced, ctaHref }: {
       {/* Top: identity, keys, way in */}
       <header className="ins-top">
         <div className="ins-id">
-          <p className="ins-word">Still</p>
+          <p className="ins-word"><StillMark /><span>Still</span></p>
           <p className="ins-meta">A quiet room for migraine days</p>
           <p className="ins-meta">Sound made on your device{webgl ? ` · ${count.toLocaleString('en-US')} points` : ''}</p>
           <p className="ins-meta">Nothing leaves it</p>
         </div>
-        <p className="ins-hint" aria-hidden>{touch ? 'Tap a texture · listen when you are ready' : 'Space turns the page · L listens · Esc falls silent'}</p>
+        <p className="ins-hint" aria-hidden>{touch ? 'Tap the dust · tap a texture · listen when you are ready' : 'Move to stir · click to ring · Space turns the page · L listens'}</p>
         <nav className="ins-nav" aria-label="Landing">
           <a href="#how" className="ins-link" onClick={onHow}>How it works</a>
           <a href="/privacy.html" className="ins-link">Privacy</a>
@@ -338,6 +371,9 @@ export function Instrument({ onEnter, onHow, reduced, ctaHref }: {
           <button type="button" className={`ins-opt${calm ? ' is-on' : ''}`} aria-pressed={calm} onClick={() => setCalm(c => !c)}>
             {calm ? 'Calm · still' : 'Calm view'}
           </button>
+          <button type="button" className={`ins-opt${chimesOn && !quiet ? ' is-on' : ''}`} aria-pressed={chimesOn && !quiet} disabled={quiet} onClick={() => setChimesOn(c => !c)}>
+            {chimesOn && !quiet ? 'Chimes on' : 'Chimes off'}
+          </button>
         </div>
       </div>
     </section>
@@ -367,6 +403,17 @@ function ListenGlyph({ on }: { on: boolean }) {
 
 function NextGlyph() {
   return <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden><path d="M2 2v8l5-4zM8 2h1.6v8H8z" fill="currentColor" /></svg>;
+}
+
+/** The mark: one wave at rest inside a plate, with the still point at its centre. Same drawing as Mark.tsx. */
+export function StillMark({ size = 22 }: { size?: number }) {
+  return (
+    <svg className="ins-mark" width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.1" opacity="0.55" />
+      <path d="M4.5 12c1.9-5.6 5.6-5.6 7.5 0s5.6 5.6 7.5 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+    </svg>
+  );
 }
 
 function FallbackMark() {
