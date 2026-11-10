@@ -1,0 +1,35 @@
+15:50:46.461 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Define variables RUNNING
+15:50:46.462 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Define variables COMPLETED
+15:50:46.463 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Apply configuration RUNNING
+15:50:46.464 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Apply configuration COMPLETED
+15:50:46.464 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Launch app "com.stillsoundlab.still" RUNNING
+15:50:47.868 [ INFO] maestro.Maestro.launchApp$lambda$6: Launching app com.stillsoundlab.still
+15:50:47.868 [ INFO] maestro.Maestro.launchApp$lambda$6: Stopping com.stillsoundlab.still app during launch
+15:50:50.438 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Launch app "com.stillsoundlab.still" COMPLETED
+15:50:50.439 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Tap on id: tab-journal RUNNING
+15:50:53.091 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tapping on element:  UiElement(treeNode=TreeNode(attributes={accessibilityText=Journal, title=, value=, text=, hintText=, resource-id=tab-journal, bounds=[139,765][262,826], enabled=true, focused=false, selected=false, checked=false}, children=[], clickable=null, enabled=true, focused=false, checked=false, selected=false), bounds=Bounds(x=139, y=765, width=123, height=61))
+15:50:57.072 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tap aimed via settled hierarchy
+15:50:57.076 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Try tapping at (200, 795) using hierarchy based logic for wait
+15:50:57.077 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to byte array
+15:50:57.078 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to output sink
+15:51:02.060 [ INFO] maestro.Maestro.screenshotBasedTap-ogj28Uc: Something have changed in the UI judging by view hierarchy. Proceed.
+15:51:02.071 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Tap on id: tab-journal COMPLETED
+15:51:02.072 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that "Your journal" is visible RUNNING
+15:51:02.399 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that "Your journal" is visible COMPLETED
+15:51:02.400 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Scrolling DOWN until "Episodes \(1\)" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering enabled RUNNING
+15:51:02.711 [ INFO] maestro.orchestra.Orchestra.scrollUntilVisible: Scrolling try count: 0, DeviceWidth: 402, DeviceWidth: 874
+15:51:02.712 [ INFO] maestro.orchestra.Orchestra.scrollUntilVisible: Element bounds: Bounds(x=20, y=841, width=362, height=26)
+15:51:02.712 [ INFO] maestro.orchestra.Orchestra.scrollUntilVisible: Visibility Percent: 1.0
+15:51:02.713 [ INFO] maestro.orchestra.Orchestra.scrollUntilVisible: Command centerElement: ScrollUntilVisibleCommand(selector=ElementSelector(textRegex=Episodes \(1\), idRegex=null, size=null, below=null, above=null, leftOf=null, rightOf=null, containsChild=null, containsDescendants=null, traits=null, index=null, enabled=null, optional=false, selected=null, checked=null, focused=null, childOf=null, css=null), direction=DOWN, scrollDuration=601, visibilityPercentage=100, timeout=20000, waitToSettleTimeoutMs=null, centerElement=true, originalSpeedValue=40, label=null, optional=false).centerElement
+15:51:02.713 [ INFO] maestro.orchestra.Orchestra.scrollUntilVisible: visibilityPercentageNormalized: 1.0
+15:51:02.735 [ INFO] maestro.Maestro.swipeFromCenter: Swiping UP from center
+15:51:08.516 [ INFO] maestro.orchestra.Orchestra.scrollUntilVisible: Scrolling try count: 1, DeviceWidth: 402, DeviceWidth: 874
+15:51:08.516 [ INFO] maestro.orchestra.Orchestra.scrollUntilVisible: Element bounds: Bounds(x=20, y=587, width=362, height=26)
+15:51:08.516 [ INFO] maestro.orchestra.Orchestra.scrollUntilVisible: Visibility Percent: 1.0
+15:51:08.516 [ INFO] maestro.orchestra.Orchestra.scrollUntilVisible: Command centerElement: ScrollUntilVisibleCommand(selector=ElementSelector(textRegex=Episodes \(1\), idRegex=null, size=null, below=null, above=null, leftOf=null, rightOf=null, containsChild=null, containsDescendants=null, traits=null, index=null, enabled=null, optional=false, selected=null, checked=null, focused=null, childOf=null, css=null), direction=DOWN, scrollDuration=601, visibilityPercentage=100, timeout=20000, waitToSettleTimeoutMs=null, centerElement=true, originalSpeedValue=40, label=null, optional=false).centerElement
+15:51:08.516 [ INFO] maestro.orchestra.Orchestra.scrollUntilVisible: visibilityPercentageNormalized: 1.0
+15:51:08.517 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Scrolling DOWN until "Episodes \(1\)" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering enabled COMPLETED
+15:51:08.518 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Take screenshot 10-journal RUNNING
+15:51:08.519 [ INFO] maestro.Maestro.takeScreenshot: Taking screenshot
+15:51:08.520 [TRACE] maestro.utils.ScreenshotUtils.takeScreenshot: Taking screenshot to output sink
+15:51:08.723 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Take screenshot 10-journal COMPLETED

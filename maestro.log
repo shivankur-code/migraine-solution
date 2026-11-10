@@ -1,0 +1,12 @@
+Anonymous analytics enabled. To opt out, set MAESTRO_CLI_NO_ANALYTICS environment variable to any value before running Maestro.
+
+
+Requested 1 shards, but it cannot be higher than the number of flows (0). Will use 1 shards instead.
+
+Waiting for flows to complete...
+[Passed] Quiet room (3m 14s)
+[Passed] Build my sound (1m 9s)
+[Passed] Journal (24s)
+
+3/3 Flows Passed in 4m 47s
+
