@@ -58,8 +58,9 @@ async function run(name, viewport) {
   await page.getByText('Your journal', { exact: true }).waitFor();
   await shot('08-journal', 2500);
   // "Still" leads back to the welcome page from any page.
-  // Every tab keeps its own copy mounted; click the one on the page being shown.
-  await page.getByLabel('Still: open the welcome page').locator('visible=true').last().click();
+  // Every tab keeps its own copy mounted in the same spot; click that spot, as a person would.
+  const box = await page.getByLabel('Still: open the welcome page').first().boundingBox();
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
   await page.getByText('Skip all this', { exact: false }).first().waitFor({ timeout: 15000 });
   await shot('09-back-to-landing', 2500);
   await page.close();
