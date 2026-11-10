@@ -292,7 +292,7 @@ export function createField(canvas: HTMLCanvasElement, opts: { count: number; re
   let ptr = [0, 0], ptrTarget = [0, 0], ptrOn = 0, ptrSeen = -1e9, ptrActive = false;
   let pulseAt = [0, 0], pulseAge = 99;
   // Half the form's size in pixels. Cover mode sizes it to the frame's larger side, so it fills the page.
-  const half = () => (opts.cover ? Math.max(frame.w, frame.h) / 2 * 0.62 : Math.min(frame.w, frame.h) / 2 * 0.95);
+  const half = () => (opts.cover ? Math.max(frame.w, frame.h) / 2 * 1.1 : Math.min(frame.w, frame.h) / 2 * 0.95);
   const toClip = (x: number, y: number) => [(x / cw) * 2 - 1, 1 - (y / ch) * 2];
   const disturbJS = (qx: number, qy: number): [number, number] => {
     const asp = cw / ch;

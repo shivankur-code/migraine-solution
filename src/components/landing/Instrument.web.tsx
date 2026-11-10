@@ -67,11 +67,12 @@ export function Instrument({ onEnter, onHow, reduced, ctaHref }: {
     if (!field) return;
     fieldRef.current = field;
     field.setParams(PARAMS);
-    field.setLevel(0.55);                       // a background: dimmer than the text in front of it
+    field.setLevel(0.75);                       // a background: dimmer than the text in front of it
     const measure = () => {
       const w = canvas.clientWidth, h = canvas.clientHeight;
-      // Wide screens: the form sits right of centre, clear of the words; narrow screens: behind them.
-      field.setFrame(w >= 960 ? { x: w * 0.3, y: 0, w: w * 0.7, h } : { x: 0, y: h * 0.05, w, h: h * 0.9 });
+      // The form fills the page. Wide screens: centred a little right of the words; narrow: in the upper half,
+      // above the words, which sit low on the screen.
+      field.setFrame(w >= 960 ? { x: w * 0.12, y: 0, w: w * 0.88, h } : { x: 0, y: -h * 0.12, w, h })
     };
     const ro = new ResizeObserver(measure);
     ro.observe(canvas); measure();
