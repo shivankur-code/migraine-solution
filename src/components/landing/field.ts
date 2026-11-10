@@ -58,7 +58,7 @@ vec4 fan(vec4 s, float t) {
   // Five slim curved blades turning slowly round a small hub, inside a faint ring: a fan you can read.
   // Each blade is bright on its leading edge and fades behind it, like a soft motion blur.
   float rot = t * mix(0.04, 0.14, uMotion);
-  float R = 0.6 * mix(0.85, 1.1, uSpace);
+  float R = 0.46 * mix(0.85, 1.1, uSpace);           // fits the screen, ring included
   if (s.w > 0.86) {                                   // the ring
     float ang = s.x * 6.2831853 + rot * 0.15;
     float r = R * (1.04 + (s.y - 0.5) * 0.025);
@@ -216,7 +216,7 @@ function formJS(i: number, s: V4, t: number, P: FieldParams): V4 {
     return [x, y, (b / 6 - 0.5) * 0.9, fall(0.75, 1, Math.abs(x) / (0.95 * W))];
   }
   if (i === 2) {
-    const rot = t * mix(0.04, 0.14, P.motion), R = 0.6 * mix(0.85, 1.1, P.space);
+    const rot = t * mix(0.04, 0.14, P.motion), R = 0.46 * mix(0.85, 1.1, P.space);
     if (s[3] > 0.86) { const ang = s[0] * TAU + rot * 0.15, r = R * (1.04 + (s[1] - 0.5) * 0.025); return [Math.cos(ang) * r, Math.sin(ang) * r, (s[2] - 0.5) * 0.05, 0.75]; }
     if (s[3] < 0.05) { const ang = s[0] * TAU, r = 0.055 * R * Math.sqrt(s[1]); return [Math.cos(ang) * r, Math.sin(ang) * r, 0, 0.9]; }
     const blade = Math.floor(s[2] * 5), r = (0.1 + 0.9 * Math.sqrt(s[1])) * R;
