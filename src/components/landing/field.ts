@@ -127,7 +127,7 @@ void main() {
   q = disturb(q, 1.6);
   gl_Position = vec4(q, 0.0, 1.0);
   gl_PointSize = (1.2 + 1.6 * s.z) * uDpr;
-  vAlpha = a * mix(0.12, 0.3, s.z) * uLevel;
+  vAlpha = a * mix(0.16, 0.4, s.z) * uLevel;
   vec3 deep = vec3(0.54, 0.41, 0.26), lamp = vec3(0.76, 0.60, 0.38), airy = vec3(0.91, 0.89, 0.85);
   vColor = mix(mix(deep, lamp, uTone), airy, step(0.82, s.w) * 0.5);
 }`;
@@ -266,7 +266,7 @@ export function createField(canvas: HTMLCanvasElement, opts: { count: number; re
   const dust = link(VS_DUST);
 
   const count = opts.count;
-  const dustCount = Math.min(count, count > 20000 ? 14000 : 7000);
+  const dustCount = Math.min(count, count > 20000 ? 24000 : 9000);
   const seed = seeds(count);
   const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
   const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
