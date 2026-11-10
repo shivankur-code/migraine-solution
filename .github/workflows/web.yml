@@ -28,6 +28,9 @@ env:
 jobs:
   web:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write   # publishes PR screenshots to the web-test-results branch
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -38,6 +41,24 @@ jobs:
         run: |
           npx expo export --platform web --output-dir dist-web
           node scripts/privacy-html.mjs dist-web/privacy.html
+      - name: Click through the app in a real browser and take screenshots
+        if: github.event_name != 'push'
+        run: |
+          npm i --no-save --no-audit --no-fund playwright
+          npx playwright install --with-deps chromium
+          (python3 -m http.server 8080 --directory dist-web >/dev/null 2>&1 &)
+          sleep 2
+          node scripts/web-shots.mjs http://127.0.0.1:8080 web-shots
+      - name: Publish the screenshots to the web-test-results branch
+        if: always() && github.event_name != 'push'
+        run: |
+          [ -d web-shots ] || exit 0
+          cd web-shots
+          git init -q && git checkout -q -b web-test-results
+          git config user.name "github-actions" && git config user.email "github-actions@users.noreply.github.com"
+          echo "Web screenshots for ${{ github.event.pull_request.head.sha || github.sha }} (run ${{ github.run_id }})" > README.md
+          git add -A && git commit -qm "Web screenshots for ${{ github.event.pull_request.head.sha || github.sha }}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" web-test-results
       - uses: azure/login@v2
         if: github.ref == 'refs/heads/main'
         with:
@@ -54,7 +75,7 @@ jobs:
             AUTH=(--account-key "$KEY")
           fi
           az storage blob upload-batch --account-name "$WEB_STORAGE_ACCOUNT" -d '$web' -s dist-web --overwrite --only-show-errors -o none "${AUTH[@]}"
-          for route in tune journal; do
+          for route in tune journal welcome; do
             az storage blob upload --account-name "$WEB_STORAGE_ACCOUNT" -c '$web' -n "$route" -f dist-web/index.html --content-type text/html --overwrite --only-show-errors -o none "${AUTH[@]}"
           done
       - name: Check the live site

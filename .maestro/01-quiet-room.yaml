@@ -31,6 +31,8 @@ name: Quiet room
 - extendedWaitUntil:
     visible: "Rest here."
     timeout: 20000
+# The room renders behind setup, so also check that setup really closed.
+- assertNotVisible: "Turn it to taste"
 - takeScreenshot: 01-quiet-room
 # Give the background renderer a few seconds to prepare the sound, as a person would while reading.
 - extendedWaitUntil:

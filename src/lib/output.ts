@@ -115,6 +115,8 @@ export function stop(seconds = 3) {
 }
 
 export const isPlaying = () => deck !== null;
+/** Live loudness is only measured in the browser; on phones the picture follows the recipe instead. */
+export const level = (): number | null => null;
 
 /**
  * Play a sound that rises slowly in loudness (even steps in dB) while the person holds a button.

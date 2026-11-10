@@ -17,8 +17,25 @@ This is the React Native (Expo) version of the web prototype in [Harshelite2503/
 |---|---|
 | **Quiet room** (`src/app/index.tsx`) | Silence first, then your comfort sound, then a softer version. Plays at the "headache now" level: 14 dB below a normal day, with a 6-second-plus fade-in. "Warning signs" and "Recovering" are 6 dB quieter than a normal day. "This is making it worse" stops the sound and makes that state 4 dB quieter next time. Sleep timer, and a dark screen while sound plays. Nothing asks you questions while it plays. |
 | **First-run setup** (`src/components/Onboarding.tsx`) | About 30 seconds: one question (which sounds are hardest), pick a texture by ear, turn one Tone dial while it plays. Every step can be skipped. |
+| **Cymatics** (`src/lib/cymatics.js`, `src/components/Cymatics*.tsx`) | Each sound has its own Chladni figure, the pattern sand makes on a vibrating plate: darker tone, simpler figure; hum adds rings; motion breathes with the sound's swell. Loose dust gathers into the figure when sound plays. Canvas with thousands of grains on the web (moves with the real audio level), a few hundred native grains on phones. Slow, no flashing, still under Reduce Motion. |
 | **Journal** (`src/app/journal.tsx`) | Episodes (sessions within 12 hours count as one), how it felt afterwards, and one-tap notes for headaches without Still. |
 | **My sound** (`src/app/tune.tsx`) | A small mixer: four textures and four click-stop dials (Tone, Hum, Motion, Space) that change the sound as it plays (`src/components/Dial.tsx`, `Studio.tsx`). Optional "choose by ear" A/B rounds, and account/privacy settings, sit behind one tap each. |
+
+## Web landing page
+
+The web build has one extra page, `/welcome` (`src/app/welcome.tsx`, drawn by `src/components/landing/Landing.web.tsx` and `landing.css`). It explains Still in plain words: the three choices, the silent start and slow fade-in, what stays on the device, how the sound is tuned by ear, and the medical line. It plays no sound and has nothing to adjust. Every button on it says "Open the quiet room", and the very first line of the page offers that same way out for anyone with a headache right now.
+
+- A browser that has neither finished setup nor seen the page before is sent to `/welcome` once (`src/lib/welcome.ts`). Opening the quiet room from the page sets `still.welcomed` in local storage; finishing or skipping setup sets `onboarded`. Either one means the room opens directly from then on.
+- Phones never see it: on iOS and Android `/welcome` goes straight to the quiet room.
+- It uses the fonts bundled with the app, nothing from the network, and honours reduced motion and reduced transparency.
+- The deploy (`.github/workflows/web.yml`, `scripts/deploy-web.sh`) uploads `welcome` as a route file alongside `tune` and `journal`, so a direct link loads with a normal 200.
+
+## Behaviour changes in the UI revamp
+
+- **Loudness and the sleep timer hide while sound plays.** They fade out when the sound starts and come back when it stops, because changing either would stop the sound by surprise. The line under the lamp shows the current loudness and timer instead.
+- **Softer is the way to go quieter during a session.** It turns the sound down and the room darker without stopping anything.
+- **The "how did that go?" check-in is a sheet**, not a card in the page. It rises below the lamp only after the sound stops, never while it plays; the lamp stays visible and tappable, and the sheet can be dragged down, skipped, or left to close by itself after 90 seconds. On a wide screen it is an inline card.
+- **New `/welcome` route on the web**, described above.
 
 ## Privacy
 
@@ -61,4 +78,5 @@ npx expo run:ios       # needs a Mac with Xcode
 | `src/lib/` | Player, storage, profile rules, theme, UI pieces |
 | `src/engine/` | Sound engine, preference learner, journal logic, WAV encoder (plain JS, shared with the web prototype) |
 | `tests/` | Node tests for the engine and journal |
-| `scripts/` | Azure Android build |
+| `src/components/landing/` | The web landing page (`/welcome`) |
+| `scripts/` | Azure Android build, web deploy |
