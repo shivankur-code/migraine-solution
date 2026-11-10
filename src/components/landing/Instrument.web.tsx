@@ -5,7 +5,8 @@
 // way in, and Listen. Inspired by Gather's point clouds; quieter, because it is for migraine days.
 //
 // Safety, as in the room: nothing plays until Listen is pressed, sound starts in silence and fades
-// in, Esc stops it. "Motion off" freezes every point; reduced motion starts frozen.
+// in, Esc stops it. The background always keeps changing, except for people whose device asks for
+// reduced motion: for them it holds still.
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { useFonts } from 'expo-font';
 import { Manrope_300Light } from '@expo-google-fonts/manrope/300Light';
@@ -17,7 +18,6 @@ import { createField, type Field } from './field';
 import { createChimes, type Chimes } from './chime';
 import './instrument.css';
 
-const MOTION_KEY = 'still.calmView';   // same key as before, so a saved choice carries over ('1' = motion off)
 const CHIME_KEY = 'still.chimes';
 // The background's order and pace: one slow change every 14 s, each change a 2.6 s swarm.
 const ORDER = [1, 0, 3, 2];            // indexes into TEXTURES: ocean, rain, hush, fan
@@ -36,8 +36,6 @@ export function Instrument({ onEnter, onHow, reduced, ctaHref }: {
 }) {
   const [fontsReady] = useFonts({ Manrope_300Light, Manrope_500Medium });
   const [step, setStep] = useState(0);                       // position in ORDER
-  const [held, setHeld] = useState(false);                   // a texture picked by hand stays put
-  const [still, setStill] = useState(() => read(MOTION_KEY, false));
   const [chimesOn, setChimesOn] = useState(() => read(CHIME_KEY, true));
   const [listening, setListening] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -50,7 +48,7 @@ export function Instrument({ onEnter, onHow, reduced, ctaHref }: {
   const fieldRef = useRef<Field | null>(null);
   const chimes = useRef<Chimes | null>(null);
   const run = useRef(0);
-  const quiet = still || reduced;
+  const quiet = reduced;
 
   const form = ORDER[step];
   const texture = TEXTURES[form];
@@ -67,12 +65,11 @@ export function Instrument({ onEnter, onHow, reduced, ctaHref }: {
     if (!field) return;
     fieldRef.current = field;
     field.setParams(PARAMS);
-    field.setLevel(0.75);                       // a background: dimmer than the text in front of it
+    field.setLevel(1);
     const measure = () => {
       const w = canvas.clientWidth, h = canvas.clientHeight;
-      // The form fills the page. Wide screens: centred a little right of the words; narrow: in the upper half,
-      // above the words, which sit low on the screen.
-      field.setFrame(w >= 960 ? { x: w * 0.12, y: 0, w: w * 0.88, h } : { x: 0, y: -h * 0.12, w, h })
+      // The form fills the page, centred behind the words.
+      field.setFrame({ x: 0, y: 0, w, h })
     };
     const ro = new ResizeObserver(measure);
     ro.observe(canvas); measure();
@@ -80,14 +77,14 @@ export function Instrument({ onEnter, onHow, reduced, ctaHref }: {
   }, [reduced, count]);
 
   useEffect(() => { fieldRef.current?.setForm(form); }, [form]);
-  useEffect(() => { fieldRef.current?.setCalm(quiet); write(MOTION_KEY, still); }, [quiet, still]);
+  useEffect(() => { fieldRef.current?.setCalm(quiet); }, [quiet]);
 
-  // The background changes on its own, unless motion is off, a texture was picked, or it is playing.
+  // The background keeps changing on its own. It holds while Listen plays, so the sound stays steady.
   useEffect(() => {
-    if (quiet || held || listening || busy) return;
+    if (quiet || listening || busy) return;
     const t = window.setInterval(() => setStep(s => (s + 1) % ORDER.length), CYCLE_MS);
     return () => window.clearInterval(t);
-  }, [quiet, held, listening, busy]);
+  }, [quiet, listening, busy]);
 
   // ------------------------------------------------------------------ the hand: stir, ring, chimes
   useEffect(() => {
@@ -148,8 +145,6 @@ export function Instrument({ onEnter, onHow, reduced, ctaHref }: {
   toggleRef.current = toggleListen;
   useEffect(() => () => { run.current++; player.stop(0.5); }, []);
 
-  // Picking a texture holds it; while listening, the new texture plays once it has settled.
-  const pick = (i: number) => { setHeld(true); setStep(i); };
   const firstRecipe = useRef(true);
   useEffect(() => {
     if (firstRecipe.current) { firstRecipe.current = false; return; }
@@ -200,32 +195,17 @@ export function Instrument({ onEnter, onHow, reduced, ctaHref }: {
           <a href={ctaHref} className="hero-btn hero-btn-primary" onClick={enter}>Open the quiet room</a>
           <button type="button" className={`hero-btn hero-btn-ghost${listening ? ' is-on' : ''}`} onClick={toggleListen} aria-pressed={listening}>
             <ListenGlyph on={listening || busy} />
-            <span>{busy && !listening ? 'Preparing…' : listening ? 'Stop' : `Listen to ${texture.label.toLowerCase()}`}</span>
+            <span>{busy && !listening ? 'Preparing…' : listening ? 'Stop' : 'Listen'}</span>
           </button>
         </div>
         <p className="hero-status" role="status" aria-live="polite">{status}</p>
       </div>
 
       <footer className="hero-foot">
-        <div className="hero-now" role="radiogroup" aria-label="Background sound">
-          <span className="hero-now-label" aria-hidden>Now</span>
-          <span className="hero-now-name" aria-hidden>{texture.label}</span>
-          <span className="hero-dots">
-            {ORDER.map((f, i) => (
-              <button key={f} type="button" role="radio" aria-checked={step === i} aria-label={TEXTURES[f].label}
-                className={`hero-dot${step === i ? ' is-on' : ''}`} onClick={() => pick(i)} />
-            ))}
-          </span>
-          {held && !quiet ? <button type="button" className="hero-quiet" onClick={() => setHeld(false)}>Keep changing</button> : null}
-        </div>
-        <div className="hero-toggles">
-          <button type="button" className="hero-quiet" aria-pressed={!still} onClick={() => setStill(s => !s)} disabled={reduced}>
-            {quiet ? 'Motion off' : 'Motion on'}
-          </button>
-          <button type="button" className="hero-quiet" aria-pressed={chimesOn && !quiet} onClick={() => setChimesOn(c => !c)} disabled={quiet}>
-            {chimesOn && !quiet ? 'Chimes on' : 'Chimes off'}
-          </button>
-        </div>
+        <p className="hero-now" aria-live="polite"><span className="hero-now-label">Now</span> <span className="hero-now-name">{texture.label}</span></p>
+        <button type="button" className="hero-quiet" aria-pressed={chimesOn && !quiet} onClick={() => setChimesOn(c => !c)} disabled={quiet}>
+          {chimesOn && !quiet ? 'Chimes on' : 'Chimes off'}
+        </button>
       </footer>
     </section>
   );
