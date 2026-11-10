@@ -22,6 +22,7 @@ import { ease, timing } from '../lib/motion';
 import { useWelcomeRedirect } from '../lib/welcome';
 import { Lamp, useLampRing, type LampAnchor, type ViewRef } from '../components/room/Lamp';
 import { figureFor } from '../lib/cymatics';
+import { Cymatics } from '../components/Cymatics';
 import { CHECK_IN_HEIGHT, CheckIn } from '../components/room/CheckIn';
 import { WorseBar, WORSE_BAR_PAD } from '../components/room/WorseBar';
 import { DimVeil } from '../components/room/DimVeil';
@@ -217,6 +218,11 @@ export default function QuietRoom() {
   const { height } = useWindowDimensions();
   // The sound's cymatic figure, from the recipe that is playing (or would play).
   const figure = useMemo(() => figureFor(playing === 'softer' ? recipes.softer : recipes.comfort), [recipes, playing]);
+  // The dust: a faint full-screen layer behind the room. Loose at rest, gathered into this sound's
+  // figure while it plays. Few grains and low opacity, so the room stays calm and readable.
+  const { width: winW } = useWindowDimensions();
+  const backdropSize = Math.max(winW, height);
+  const backdrop = <Cymatics figure={playingNow ? figure : null} size={backdropSize} live={playingNow && !dimmed} opacity={0.4} grains={Platform.OS === 'web' ? 2600 : 220} />;
   const lampSize = wide ? 320 : tablet ? 280 : height < 700 ? 208 : 232;
   const current = recipes[playing === 'softer' ? 'softer' : 'comfort'];
   const scene = sceneFor(current.texture);
@@ -246,7 +252,6 @@ export default function QuietRoom() {
   );
   const lamp = (
     <Lamp size={lampSize} scene={scene} ring={ring} playing={playingNow} preparing={preparing} anchorRef={lampRef} focusRef={lampFocus} onLayout={measureLamp}
-      figure={figure} live={playingNow && !dimmed}
       onPress={() => (playingNow ? stopSound() : playSound('comfort'))} />
   );
   const statusLine = <Status sub={sub} worse={worseNote} live={worseNote ? 'assertive' : 'polite'} center={!wide}>{line}</Status>;
@@ -291,7 +296,7 @@ export default function QuietRoom() {
   return (
     // Capture, never claim: every touch start in the room re-arms the auto-dim and then goes on as usual.
     <View style={styles.room} onStartShouldSetResponderCapture={() => { activity(); return false; }}>
-      <Screen overlay={overlay} scrollRef={scroll} center texture={scene} depth={DEPTH[state]} playing={sounding} softer={playing === 'softer'} worse={backedOff}
+      <Screen overlay={overlay} scrollRef={scroll} center texture={scene} backdrop={backdrop} depth={DEPTH[state]} playing={sounding} softer={playing === 'softer'} worse={backedOff}
         fadeInMs={fadeInMs} bottomPad={bottomPad} inert={covered}>
         <View style={styles.column}>
           {wide ? (

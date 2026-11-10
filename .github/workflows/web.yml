@@ -37,6 +37,8 @@ jobs:
         with: { node-version: 22, cache: npm }
       - run: npm ci
       - run: npm test
+      # The full type check (it used to run only with the iOS build, which is paused).
+      - run: npx tsc --noEmit
       - name: Build the web app
         run: |
           npx expo export --platform web --output-dir dist-web

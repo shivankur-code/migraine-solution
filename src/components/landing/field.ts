@@ -240,7 +240,7 @@ export type Field = {
   destroy(): void;
 };
 
-export function createField(canvas: HTMLCanvasElement, opts: { count: number; reduced: boolean }): Field | null {
+export function createField(canvas: HTMLCanvasElement, opts: { count: number; reduced: boolean; cover?: boolean }): Field | null {
   const gl = canvas.getContext('webgl2', { alpha: true, antialias: false, premultipliedAlpha: true, powerPreference: 'low-power' });
   if (!gl) return null;
 
@@ -291,6 +291,8 @@ export function createField(canvas: HTMLCanvasElement, opts: { count: number; re
   // Pointer, in clip space. `ptrOn` eases up while the cursor moves and away about 2.5 s after it stops.
   let ptr = [0, 0], ptrTarget = [0, 0], ptrOn = 0, ptrSeen = -1e9, ptrActive = false;
   let pulseAt = [0, 0], pulseAge = 99;
+  // Half the form's size in pixels. Cover mode sizes it to the frame's larger side, so it fills the page.
+  const half = () => (opts.cover ? Math.max(frame.w, frame.h) / 2 * 1.1 : Math.min(frame.w, frame.h) / 2 * 0.95);
   const toClip = (x: number, y: number) => [(x / cw) * 2 - 1, 1 - (y / ch) * 2];
   const disturbJS = (qx: number, qy: number): [number, number] => {
     const asp = cw / ch;
@@ -316,7 +318,7 @@ export function createField(canvas: HTMLCanvasElement, opts: { count: number; re
     const cy = Math.cos(ax), sy = Math.sin(ax), cx = Math.cos(ay), sx = Math.sin(ay);
     let x = cy * p[0] + sy * p[2], y = p[1], z = -sy * p[0] + cy * p[2];
     const y2 = cx * y - sx * z; z = sx * y + cx * z; y = y2;
-    const f = 2.2 / (2.2 - z), s = Math.min(frame.w, frame.h) / 2 * 0.95;
+    const f = 2.2 / (2.2 - z), s = half();
     const px = frame.x + frame.w / 2 + x * f * s, py = frame.y + frame.h / 2 - y * f * s;
     const c = toClip(px, py), q = disturbJS(c[0], c[1]);
     return { x: ((q[0] + 1) / 2) * cw, y: ((1 - q[1]) / 2) * ch };
@@ -353,7 +355,7 @@ export function createField(canvas: HTMLCanvasElement, opts: { count: number; re
   };
 
   const draw = () => {
-    const s = Math.min(frame.w, frame.h) / 2 * 0.95;
+    const s = half();
     gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
     const pointerUniforms = (l: typeof u) => {
       gl.uniform2f(l.pointer, ptr[0], ptr[1]); gl.uniform1f(l.pointerOn, ptrOn); gl.uniform1f(l.aspect, cw / ch);

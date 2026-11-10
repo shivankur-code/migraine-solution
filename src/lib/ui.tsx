@@ -508,13 +508,15 @@ export type ScreenProps = {
   /** Hide the content from touch, keyboard and assistive tech (the dim veil or Dark screen is over it). */
   inert?: boolean;
   contentStyle?: StyleProp<ViewStyle>;
+  /** Drawn over the scene and under everything else, full screen (the Quiet room's dust). */
+  backdrop?: ReactNode;
 };
 
 /** Lets a control that is being dragged (a dial) stop the page from scrolling under the finger. */
 const ScrollLock = createContext<(locked: boolean) => void>(() => {});
 export const useScrollLock = () => useContext(ScrollLock);
 
-export function Screen({ children, scrollRef, overlay, center, texture, depth = 1, playing, softer, worse, fadeInMs, bottomPad = 0, inert = false, contentStyle }: ScreenProps) {
+export function Screen({ children, scrollRef, overlay, center, texture, depth = 1, playing, softer, worse, fadeInMs, bottomPad = 0, inert = false, contentStyle, backdrop }: ScreenProps) {
   const wide = useWide();
   const gutter = useGutter();
   const insets = useSafeAreaInsets();
@@ -536,6 +538,7 @@ export function Screen({ children, scrollRef, overlay, center, texture, depth = 
     <ScrollLock.Provider value={setLocked}>
     <View style={styles.root}>
       <Scene texture={texture} depth={depth} playing={playing} softer={softer} worse={worse} fadeInMs={fadeInMs} />
+      {backdrop ? <View pointerEvents="none" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }]}>{backdrop}</View> : null}
       <Inert when={inert} style={styles.fill}>
         <SafeAreaView style={styles.grow} edges={['top']}>
           <ScrollView ref={scrollRef} scrollEnabled={!locked} keyboardShouldPersistTaps="handled" onLayout={e => setViewH(e.nativeEvent.layout.height)}

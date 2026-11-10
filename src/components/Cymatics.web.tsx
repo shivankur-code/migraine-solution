@@ -8,10 +8,10 @@ import { gather, scatter, type Figure } from '../lib/cymatics';
 import { level } from '../lib/output';
 import { useReducedMotion } from '../lib/motion';
 
-type Props = { figure: Figure | null; size: number; live?: boolean; pulse?: number; opacity?: number };
+type Props = { figure: Figure | null; size: number; live?: boolean; pulse?: number; opacity?: number; /** Grain count; a background wants fewer. */ grains?: number };
 
-export function Cymatics({ figure, size, live = false, pulse = 0, opacity = 1 }: Props) {
-  const count = Math.round(Math.min(6000, Math.max(1200, size * size * 0.05)));
+export function Cymatics({ figure, size, live = false, pulse = 0, opacity = 1, grains }: Props) {
+  const count = grains ?? Math.round(Math.min(6000, Math.max(1200, size * size * 0.05)));
   const canvas = useRef<HTMLCanvasElement | null>(null);
   const reduce = useReducedMotion();
   const target = useMemo(() => (figure ? gather(figure, count) : scatter(count)), [figure?.key, figure?.hum, figure?.spread, figure?.fuzz, count]);
