@@ -312,7 +312,8 @@ export default function QuietRoom() {
               {statusLine}
               {loudness}
               {escapes}
-              {disclaimer}
+              {/* While sound plays the pinned worse bar sits here: the disclaimer fades out but keeps its space. */}
+              <Hold show={!playingNow}>{disclaimer}</Hold>
             </>
           )}
         </View>

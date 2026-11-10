@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router/js-tabs';
 import { StatusBar } from 'expo-status-bar';
-import { AppState, Easing } from 'react-native';
+import { AppState, Easing, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useEffect } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -26,8 +26,9 @@ const crossFade = { animation: 'timing' as const, config: { duration: timing.cro
 export default function Layout() {
   // Desktop browser: a sidebar. Phones, tablets and narrow browsers: the floating tab bar.
   const wide = useWide();
-  // Start loading the five font files at once; nothing waits on them (Screen fades text in when ready).
-  useAppFonts();
+  // Hold the first paint until the fonts are ready (a load failure also counts as ready). On iPhone, text
+  // laid out in the fallback font and then drawn in the bundled one gets clipped ("Stil", "Quiet ro…").
+  const { ready } = useAppFonts();
   // If the person turned on "Help improve Still", upload new events at launch, on return, and every few minutes.
   useEffect(() => {
     syncNow();
@@ -36,6 +37,7 @@ export default function Layout() {
     const stopLinks = listenForSignInLinks();
     return () => { sub.remove(); clearInterval(timer); stopLinks(); };
   }, []);
+  if (!ready) return <View style={{ flex: 1, backgroundColor: colors.night }} />;
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.night }}>
       <StatusBar style="light" />
