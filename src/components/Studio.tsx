@@ -11,6 +11,8 @@ import { Control, Ionicons, Press, Tile, useMaterial, useTablet, type IconName }
 import { track } from '../lib/activity';
 import { Dial } from './Dial';
 import { RecipeArc } from './RecipeArc';
+import { Cymatics } from './Cymatics';
+import type { Figure } from '../lib/cymatics';
 
 export type Texture = NonNullable<Intake['texture']>;
 export const TEXTURES: { value: Texture; label: string; icon: IconName }[] = [
@@ -127,6 +129,7 @@ export function ProfileDial({ which, profile, onChange, size, disabled }: { whic
 
 const DISC = 112;
 const ARC = 150;
+const FIGURE_BOX = 240;
 const RING_IDLE = 0.35;
 const RING_ON = 0.9;
 const PREVIEW_FADE_IN_MS = 800;   // usePreview plays with fadeIn 0.8 s; the ring brightens at the same rate
@@ -136,7 +139,7 @@ const PREVIEW_FADE_IN_MS = 800;   // usePreview plays with fadeIn 0.8 s; the rin
  * and settles back when it stops. Pass `arc` (the profile) to draw the Recipe Arc around it, as My sound does;
  * `compact` gives a 48 pt pill for tight layouts.
  */
-export function PreviewButton({ on, busy, onPress, arc, compact }: { on: boolean; busy: boolean; onPress: () => void; arc?: Profile; compact?: boolean }) {
+export function PreviewButton({ on, busy, onPress, arc, compact, figure }: { on: boolean; busy: boolean; onPress: () => void; arc?: Profile; compact?: boolean; figure?: Figure }) {
   const ring = useSharedValue(on ? RING_ON : RING_IDLE);
   useEffect(() => {
     cancelAnimation(ring);
@@ -159,13 +162,15 @@ export function PreviewButton({ on, busy, onPress, arc, compact }: { on: boolean
     );
   }
 
-  const box = arc ? ARC : DISC;
+  // With a figure, the arc opens out so the sound's cymatic figure fills the ring around Listen.
+  const box = figure ? FIGURE_BOX : arc ? ARC : DISC;
   return (
     <View style={s.listen}>
       <View style={{ width: box, height: box, alignItems: 'center', justifyContent: 'center' }}>
-        {arc ? <RecipeArc profile={arc} size={ARC} /> : null}
+        {figure ? <View pointerEvents="none" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}><Cymatics figure={figure} size={box - 22} live={on} /></View> : null}
+        {arc ? <RecipeArc profile={arc} size={box} /> : null}
         {/* A large lit surface: no reduced-motion opacity pulse on touch. */}
-        <Press {...a11y} onPress={onPress} largeSurface style={[s.disc, material.fill]}>
+        <Press {...a11y} onPress={onPress} largeSurface style={[s.disc, material.fill, figure ? s.discSmall : null]}>
           <Animated.View pointerEvents="none" style={[s.ring, ringStyle]} />
           <Ionicons name={glyph} size={36} color={colors.lamp} style={on ? null : s.playNudge} />
         </Press>
@@ -179,6 +184,7 @@ const s = StyleSheet.create({
   tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: space.m },
   tileQuarter: { flexBasis: '22%' },
   listen: { alignSelf: 'center', alignItems: 'center', gap: space.s },
+  discSmall: { width: 88, height: 88, borderRadius: 44, backgroundColor: colors.solid },
   disc: { width: DISC, height: DISC, borderRadius: DISC / 2, backgroundColor: colors.smoke, borderWidth: 1, borderColor: colors.hairline, alignItems: 'center', justifyContent: 'center' },
   ring: { position: 'absolute', top: -1, left: -1, right: -1, bottom: -1, borderRadius: DISC / 2, borderWidth: 2, borderColor: colors.lamp },
   playNudge: { marginLeft: 3 },   // the play triangle's optical centre sits right of its box

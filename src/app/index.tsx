@@ -21,6 +21,7 @@ import { colors, radius, sceneFor, tabBarStyle, z, type Depth } from '../lib/the
 import { ease, timing } from '../lib/motion';
 import { useWelcomeRedirect } from '../lib/welcome';
 import { Lamp, useLampRing, type LampAnchor, type ViewRef } from '../components/room/Lamp';
+import { figureFor } from '../lib/cymatics';
 import { CHECK_IN_HEIGHT, CheckIn } from '../components/room/CheckIn';
 import { WorseBar, WORSE_BAR_PAD } from '../components/room/WorseBar';
 import { DimVeil } from '../components/room/DimVeil';
@@ -214,6 +215,8 @@ export default function QuietRoom() {
   // The room: the sound's scene, loudness as depth, and the lamp ring mirroring the gain ramp.
   const wide = useWide(), tablet = useTablet();
   const { height } = useWindowDimensions();
+  // The sound's cymatic figure, from the recipe that is playing (or would play).
+  const figure = useMemo(() => figureFor(playing === 'softer' ? recipes.softer : recipes.comfort), [recipes, playing]);
   const lampSize = wide ? 320 : tablet ? 280 : height < 700 ? 208 : 232;
   const current = recipes[playing === 'softer' ? 'softer' : 'comfort'];
   const scene = sceneFor(current.texture);
@@ -243,6 +246,7 @@ export default function QuietRoom() {
   );
   const lamp = (
     <Lamp size={lampSize} scene={scene} ring={ring} playing={playingNow} preparing={preparing} anchorRef={lampRef} focusRef={lampFocus} onLayout={measureLamp}
+      figure={figure} live={playingNow && !dimmed}
       onPress={() => (playingNow ? stopSound() : playSound('comfort'))} />
   );
   const statusLine = <Status sub={sub} worse={worseNote} live={worseNote ? 'assertive' : 'polite'} center={!wide}>{line}</Status>;

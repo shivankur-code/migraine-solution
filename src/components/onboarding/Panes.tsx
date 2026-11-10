@@ -1,12 +1,15 @@
 // The four onboarding panes. Each is a plain column that fills the stage; the shell (Onboarding.tsx)
 // owns the step, the preview and the cross-fade between panes. Copy here is the spec's, word for word.
-import type { ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
-import type { Profile } from '../../lib/profile';
+import { useEffect, useState, type ReactNode } from 'react';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
+import { recipeFor, type Profile } from '../../lib/profile';
+import { figureFor } from '../../lib/cymatics';
+import { Cymatics } from '../Cymatics';
+import { Hud } from '../Hud';
 import { colors, space } from '../../lib/theme';
 import { Body, Button, Display, Eyebrow, Tile, Title, type IconName } from '../../lib/ui';
 import { Mark } from '../Mark';
-import { PreviewButton, ProfileDial, TextureTiles, usePreview, type Hardest, type Texture } from '../Studio';
+import { DIALS, PreviewButton, ProfileDial, TextureTiles, textureName, usePreview, type Hardest, type Texture } from '../Studio';
 
 export type Preview = ReturnType<typeof usePreview>;
 
@@ -36,10 +39,17 @@ function Foot({ children }: { children: ReactNode }) {
 
 // Pane 0: the mark, the name, one sentence, and the primary whose label the deploy workflow greps for (it appears nowhere else).
 export function WelcomePane({ onStart, onSkip }: { onStart: () => void; onSkip: () => void }) {
+  // Loose dust that gathers into a figure a moment after the page appears: what sound does to sand.
+  const [formed, setFormed] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setFormed(true), 700); return () => clearTimeout(t); }, []);
+  const figure = figureFor({ tiltDbPerOct: -6.5, texture: 'rain' });
   return (
     <View style={styles.pane}>
       <View style={styles.welcome}>
-        <Mark size={56} />
+        <Hud size={180} tl="Still" tr="Cymatics" bl={formed ? `Figure ${figure.n} · ${figure.m}` : 'Resting'} br="Rain" ticks={false}>
+          <Cymatics figure={formed ? figure : null} size={176} live={formed} />
+        </Hud>
+        <Mark size={36} />
         <Display center>Still</Display>
         <Body center color={colors.ink2} style={styles.welcomeBody}>A soft sound for migraine days. Made on your phone, just for you.</Body>
       </View>
@@ -89,11 +99,21 @@ export function TexturePane({ profile, preview, onPick, onContinue }: {
 export function DialPane({ profile, preview, onChange, onSave }: {
   profile: Profile; preview: Preview; onChange: (p: Profile) => void; onSave: () => void;
 }) {
+  // The figure of the sound being tuned, above the dial when the screen has room for both.
+  const roomy = useWindowDimensions().height >= 720;
+  const sound = recipeFor(profile, 'warning').recipe;
+  const figure = figureFor(sound);
+  const tone = DIALS.tone.stops[DIALS.tone.index(recipeFor(profile, 'normal').recipe)];
   return (
     <View style={styles.pane}>
-      <PaneHeader kicker="3 of 3" title="Turn it to taste" sub="Drag the dial, or tap it. Deeper is usually calmer." />
+      <PaneHeader kicker="3 of 3" title="Turn it to taste" sub="Turn the dial and watch your sound take shape. Deeper is usually calmer." />
       <View style={styles.dial}>
-        <ProfileDial which="tone" profile={profile} onChange={onChange} size={176} />
+        {roomy ? (
+          <Hud size={140} tl={tone} tr={`${figure.n} · ${figure.m}`} br={textureName(sound.texture)} ticks={false}>
+            <Cymatics figure={figure} size={136} live={preview.on} />
+          </Hud>
+        ) : null}
+        <ProfileDial which="tone" profile={profile} onChange={onChange} size={roomy ? 140 : 176} />
         <PreviewButton compact on={preview.on} busy={preview.busy} onPress={() => preview.toggle(profile)} />
       </View>
       <Foot>

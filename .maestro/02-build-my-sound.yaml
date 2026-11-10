@@ -9,6 +9,10 @@ name: Build my sound
     visible: "Your sound"
     timeout: 10000
 - takeScreenshot: 06-my-sound
+- scrollUntilVisible:
+    element: "Ocean"
+    direction: DOWN
+    centerElement: true
 - tapOn: "Ocean"
 - takeScreenshot: 07-mixer
 - scrollUntilVisible:

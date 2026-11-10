@@ -3,7 +3,8 @@
 import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
-import { freshProfile, type Profile } from '../lib/profile';
+import { freshProfile, recipeFor, type Profile } from '../lib/profile';
+import { figureFor } from '../lib/cymatics';
 import { loadProfile, saveOnboarded, saveProfile } from '../lib/storage';
 import * as player from '../lib/player';
 import { Tests } from '../components/build/Tests';
@@ -31,6 +32,8 @@ export default function MySound() {
 
   const update = (next: Profile) => { setProfile(next); saveProfile(next); preview.update(next); };
   const hatesHum = (profile.intake.dislikes || []).includes('hum');
+  // The cymatic figure of the sound the dials make; it reshapes as each dial is turned.
+  const figure = figureFor(recipeFor(profile, 'warning').recipe);
 
   const startOver = () => confirmAction('Set up your sound again?', 'Your dials and choices go back to the start. Your journal stays.', 'Start over', async () => {
     preview.stop();
@@ -46,10 +49,10 @@ export default function MySound() {
     <>
       <View style={s.header}>
         <Title accessibilityRole="header">Your sound</Title>
-        <Body color={colors.ink2}>Turn the dials while it plays. Changes save by themselves.</Body>
+        <Body color={colors.ink2}>Turn the dials and watch your sound take shape. Changes save by themselves.</Body>
       </View>
 
-      <PreviewButton on={preview.on} busy={preview.busy} arc={profile} onPress={() => preview.toggle(profile)} />
+      <PreviewButton on={preview.on} busy={preview.busy} arc={profile} figure={figure} onPress={() => preview.toggle(profile)} />
 
       <TextureTiles value={profile.intake.texture} onPick={t => {
         const next = { ...profile, intake: { ...profile.intake, texture: t } };

@@ -4,9 +4,14 @@ import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { episodes, freshJournal, metrics, sanitizeJournal } from '../engine/journal-store.js';
-import { clearJournal, loadJournal, saveJournal, type Journal } from '../lib/storage';
+import { clearJournal, loadJournal, loadProfile, saveJournal, type Journal } from '../lib/storage';
+import { recipeFor } from '../lib/profile';
+import { figureFor, type Figure } from '../lib/cymatics';
+import { Cymatics } from '../components/Cymatics';
+import { Hud } from '../components/Hud';
+import { textureName } from '../components/Studio';
 import { clearActivity, loadActivity, summarize } from '../lib/activity';
-import { Body, Button, Card, Caption, Chip, Columns, confirmAction, Heading, Screen, Status, Title } from '../lib/ui';
+import { Body, Button, Card, Caption, Chip, Columns, confirmAction, Heading, Screen, Status, Title, useWide } from '../lib/ui';
 import { colors } from '../lib/theme';
 import { Stat } from '../components/journal/Stat';
 import { Bars } from '../components/journal/Bars';
@@ -22,9 +27,18 @@ export default function JournalScreen() {
   const [loaded, setLoaded] = useState(false);
   const [note, setNote] = useState('');
   const [act, setAct] = useState(summarize([]));
+  const [figure, setFigure] = useState<Figure | null>(null);
+  const [texture, setTexture] = useState('rain');
+  const [formed, setFormed] = useState(false);
+  const [pulse, setPulse] = useState(0);
+  const wide = useWide();
+  // Each visit, the dust gathers into the person's own figure.
   useFocusEffect(useCallback(() => {
     loadJournal().then(j => { setJournal(j); setLoaded(true); });
     loadActivity().then(a => setAct(summarize(a, 90))).catch(() => {});
+    loadProfile().then(p => { const r = recipeFor(p, 'warning').recipe; setFigure(figureFor(r)); setTexture(r.texture); });
+    const t = setTimeout(() => setFormed(true), 350);
+    return () => { clearTimeout(t); setFormed(false); };
   }, []));
 
   const m = metrics(journal);
@@ -38,7 +52,9 @@ export default function JournalScreen() {
     if (j.missed.some(x => x.at.slice(0, 10) === day)) { setNote('That day is already noted.'); return; }
     j.missed.push({ at: at.toISOString() });
     const next = sanitizeJournal(j) as Journal;
-    setNote((await saveJournal(next)) ? 'Noted. Thank you.' : 'The phone is not letting Still save.');
+    const saved = await saveJournal(next);
+    setNote(saved ? 'Noted. Thank you.' : 'The phone is not letting Still save.');
+    if (saved) setPulse(n => n + 1); // a ripple through the figure
     setJournal(next);
   };
 
@@ -61,8 +77,15 @@ export default function JournalScreen() {
   return (
     <Screen texture="hush" depth={1}>
       <Columns rightWidth={460} left={<>
-        <Title>Your journal</Title>
-        <Body color={colors.ink2}>Still notes each time you use it. It stays on this device.</Body>
+        <View style={styles.hero}>
+          <View style={styles.heroText}>
+            <Title>Your journal</Title>
+            <Body color={colors.ink2}>Still notes each time you use it. It stays on this device.</Body>
+          </View>
+          <Hud size={wide ? 170 : 112} tl={`${m.usedEpisodes} ${m.usedEpisodes === 1 ? 'day' : 'days'}`} br={textureName(texture)} ticks={false}>
+            <Cymatics figure={formed ? figure : null} size={wide ? 166 : 108} live={formed} pulse={pulse} />
+          </Hud>
+        </View>
 
         <View style={styles.stats}>
           <Stat value={empty ? null : m.usedEpisodes} label="hard days with Still" />
@@ -97,6 +120,8 @@ export default function JournalScreen() {
 }
 
 const styles = StyleSheet.create({
+  hero: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  heroText: { flex: 1, gap: 6 },
   stats: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   chips: { flexDirection: 'row', gap: 8, marginTop: 6 },
   // Three across on a 375 pt phone; the labels wrap inside the chip under large type.

@@ -10,6 +10,8 @@ import { colors, type SceneTexture } from '../../lib/theme';
 import { breath, lum, timing, useReducedMotion } from '../../lib/motion';
 import { Control, Ionicons, Press } from '../../lib/ui';
 import { svgHidden } from '../Mark';
+import { Cymatics } from '../Cymatics';
+import type { Figure } from '../../lib/cymatics';
 
 export const RING_IDLE = 0.35;
 export const RING_LIT = 0.9;
@@ -97,7 +99,7 @@ export const coverData = Platform.OS === 'web' ? { dataSet: { stillCover: '1' } 
 /** No focus ring on a cover: a lamp-coloured outline round the whole viewport would flash as it dims. Inline, so it beats the shell's rule. */
 export const coverNoRing = (Platform.OS === 'web' ? { outlineStyle: 'none' } : null) as ViewStyle | null;
 
-export function Lamp({ size, scene, ring, playing, preparing, onPress, anchorRef, focusRef, onLayout }: {
+export function Lamp({ size, scene, ring, playing, preparing, onPress, anchorRef, focusRef, onLayout, figure, live }: {
   size: number;
   /** The room's scene; the disc takes its floor-bottom colour so it reads as part of the floor. */
   scene: SceneTexture;
@@ -110,6 +112,10 @@ export function Lamp({ size, scene, ring, playing, preparing, onPress, anchorRef
   /** The pressable itself, so focus can return to it (the check-in sheet closing). */
   focusRef?: RefObject<unknown>;
   onLayout?: (e: LayoutChangeEvent) => void;
+  /** The sound's cymatic figure: loose dust in the disc at rest, gathered into the figure while it plays. */
+  figure?: Figure | null;
+  /** Grains tremble and turn only while the sound plays and the screen is awake. */
+  live?: boolean;
 }) {
   const label = preparing ? 'Getting ready' : playing ? 'Fade to silence' : 'Play my sound';
   const caption = preparing ? 'Getting ready…' : playing ? 'Tap to fade out' : 'Play my sound';
@@ -124,9 +130,19 @@ export function Lamp({ size, scene, ring, playing, preparing, onPress, anchorRef
           <Circle cx={size / 2} cy={size / 2} r={size / 2 - RING_WIDTH} fill={disc} />
         </Svg>
         <LampRing size={size} opacity={ring} style={StyleSheet.absoluteFill} />
+        {figure !== undefined ? (
+          <View pointerEvents="none" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
+            <Cymatics figure={playing ? figure : null} size={size * 0.86} live={!!live} opacity={0.9} />
+          </View>
+        ) : null}
         <View style={lampFace}>
-          <Ionicons name={playing ? 'pause' : 'play'} size={GLYPH} color={colors.lamp} style={{ marginLeft: playing ? 0 : 3 }} />
-          <Control center>{caption}</Control>
+          {/* A small floor-coloured disc keeps the glyph and caption clear of the grains. */}
+          <View style={figure !== undefined ? { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: disc } : null}>
+            <Ionicons name={playing ? 'pause' : 'play'} size={GLYPH} color={colors.lamp} style={{ marginLeft: playing ? 0 : 3 }} />
+          </View>
+          <View style={figure !== undefined ? { backgroundColor: disc, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 2 } : null}>
+            <Control center>{caption}</Control>
+          </View>
         </View>
       </Press>
     </View>
