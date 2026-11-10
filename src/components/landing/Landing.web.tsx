@@ -101,14 +101,6 @@ export function Landing() {
         <div className="lp-night" aria-hidden />
 
         <div className={`lp-page${ready ? ' is-ready' : ''}${leaving ? ' is-leaving' : ''}`}>
-          {/* 0. For someone mid-attack: the way out comes before everything else, in DOM and tab order. */}
-          <div className="lp-now">
-            <div className="lp-wrap">
-              <span>Headache right now? Skip all this.</span>
-              {cta('lp-btn lp-btn-outline lp-btn-pill')}
-            </div>
-          </div>
-
           <a href="#main" className="lp-skip" onClick={jump('main')}>Skip to content</a>
 
           <main id="main" ref={mainRef} tabIndex={-1}>

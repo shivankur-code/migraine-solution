@@ -19,7 +19,7 @@ async function run(name, viewport) {
   const shot = async (label, wait = 1200) => { await page.waitForTimeout(wait); await page.screenshot({ path: `${out}/${name}-${label}.png` }); };
   await page.goto(base, { waitUntil: 'networkidle' });
   // First web visit lands on the welcome page: photograph it, then mark it seen and open the app.
-  const landing = page.getByText('Skip all this', { exact: false });
+  const landing = page.getByText('A quiet room, with one soft sound in it.');
   if (await landing.first().waitFor({ timeout: 15000 }).then(() => true, () => false)) {
     await shot('landing-top', 3500);
     // Stir the dust with the cursor and ring it with a click, as a visitor would.
@@ -27,6 +27,8 @@ async function run(name, viewport) {
     for (let i = 0; i <= 12; i++) await page.mouse.move(width * (0.25 + 0.04 * i), height * (0.35 + 0.02 * i), { steps: 4 });
     await page.mouse.click(width * 0.62, height * 0.5);
     await shot('landing-stirred', 900);
+    // The background changes on its own every 14 s: catch the next texture too.
+    await shot('landing-later', 15000);
     await page.screenshot({ path: `${out}/${name}-landing-full.png`, fullPage: true });
     await page.evaluate(() => localStorage.setItem('still.welcomed', '1'));
     await page.goto(base, { waitUntil: 'networkidle' });
@@ -61,7 +63,7 @@ async function run(name, viewport) {
   // Every tab keeps its own copy mounted in the same spot; click that spot, as a person would.
   const box = await page.getByLabel('Still: open the welcome page').first().boundingBox();
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
-  await page.getByText('Skip all this', { exact: false }).first().waitFor({ timeout: 15000 });
+  await page.getByText('A quiet room, with one soft sound in it.').first().waitFor({ timeout: 15000 });
   await shot('09-back-to-landing', 2500);
   await page.close();
 }
