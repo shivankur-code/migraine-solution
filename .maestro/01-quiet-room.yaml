@@ -41,7 +41,12 @@ name: Quiet room
     optional: true
 
 # 1. Play, then stop well before the screen dims (sessions under 3 s are not recorded).
-- tapOn: "Play my sound"
+# The room never stops moving (the lamp breathes, the grains drift), so the test's usual wait for a
+# still screen runs to its limit before every tap. That delay could outlast the 15 s auto-dim and
+# land the tap on the dim veil, which only wakes the screen. Taps here wait at most half a second.
+- tapOn:
+    text: "Play my sound"
+    waitToSettleTimeoutMs: 500
 - extendedWaitUntil:
     visible: "Fade to silence"
     timeout: 12000
@@ -50,45 +55,62 @@ name: Quiet room
     visible: "this text never appears"
     timeout: 4000
     optional: true
-# On a slow simulator the sound can take long enough to start that the screen has already dimmed
-# (15 s after Play). While dimmed, a touch only wakes the screen, so wake it first.
+# Safety net: if the 15 s auto-dim is already up, wake it first (while dimmed, a touch only wakes).
 - runFlow:
     when:
       visible: "Screen dimmed. Tap to brighten."
     commands:
-      - tapOn: "Screen dimmed. Tap to brighten."
+      - tapOn:
+          text: "Screen dimmed. Tap to brighten."
+          waitToSettleTimeoutMs: 500
       - extendedWaitUntil:
           notVisible: "Screen dimmed. Tap to brighten."
           timeout: 8000
-- tapOn: "Fade to silence"
+- tapOn:
+    text: "Fade to silence"
+    waitToSettleTimeoutMs: 500
 - extendedWaitUntil:
     visible: "Optional: how did that go?"
     timeout: 10000
 - takeScreenshot: 03-check-in
-- tapOn: "A bit easier"
+- tapOn:
+    text: "A bit easier"
+    waitToSettleTimeoutMs: 500
 - assertVisible: "Noted. Rest well."
 
 # 2. Auto-dim: 15 s after play the screen dims; one tap brings it back without stopping the sound.
-- tapOn: "Play my sound"
+- tapOn:
+    text: "Play my sound"
+    waitToSettleTimeoutMs: 500
 - extendedWaitUntil:
     visible: "Screen dimmed. Tap to brighten."
     timeout: 30000
 - takeScreenshot: 04-auto-dimmed
-- tapOn: "Screen dimmed. Tap to brighten."
+- tapOn:
+    text: "Screen dimmed. Tap to brighten."
+    waitToSettleTimeoutMs: 500
 # The veil takes 700 ms to lift and swallows touches until the app has let go of it. A tap that
 # arrives first only "wakes" again and the sound keeps playing, so wait for the veil to be gone.
 - extendedWaitUntil:
     notVisible: "Screen dimmed. Tap to brighten."
     timeout: 8000
 - assertVisible: "This is making it worse"
-- tapOn: "Fade to silence"
+- tapOn:
+    text: "Fade to silence"
+    waitToSettleTimeoutMs: 500
 - extendedWaitUntil:
     visible: "Optional: how did that go?"
     timeout: 10000
-- tapOn: "Skip"
+- tapOn:
+    text: "Skip"
+    waitToSettleTimeoutMs: 500
 
 # 3. Dark screen: pure black; one tap comes back.
-- tapOn: "Dark screen"
+- tapOn:
+    text: "Dark screen"
+    waitToSettleTimeoutMs: 500
 - takeScreenshot: 05-dark-screen
-- tapOn: "Dark screen. Tap to come back."
+- tapOn:
+    text: "Dark screen. Tap to come back."
+    waitToSettleTimeoutMs: 500
 - assertVisible: "Rest here."
