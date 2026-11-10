@@ -100,20 +100,21 @@ export function DialPane({ profile, preview, onChange, onSave }: {
   profile: Profile; preview: Preview; onChange: (p: Profile) => void; onSave: () => void;
 }) {
   // The figure of the sound being tuned, above the dial when the screen has room for both.
-  const roomy = useWindowDimensions().height >= 720;
+  // A 6.1" iPhone is 844 pt tall: figure, dial and Save must all fit without scrolling.
+  const roomy = useWindowDimensions().height >= 800;
   const sound = recipeFor(profile, 'warning').recipe;
   const figure = figureFor(sound);
   const tone = DIALS.tone.stops[DIALS.tone.index(recipeFor(profile, 'normal').recipe)];
   return (
     <View style={styles.pane}>
       <PaneHeader kicker="3 of 3" title="Turn it to taste" sub="Turn the dial and watch your sound take shape. Deeper is usually calmer." />
-      <View style={styles.dial}>
+      <View style={[styles.dial, roomy && styles.dialTight]}>
         {roomy ? (
-          <Hud size={140} tl={tone} tr={`${figure.n} · ${figure.m}`} br={textureName(sound.texture)} ticks={false}>
-            <Cymatics figure={figure} size={136} live={preview.on} />
+          <Hud size={104} tl={tone} tr={`${figure.n} · ${figure.m}`} br={textureName(sound.texture)} ticks={false}>
+            <Cymatics figure={figure} size={100} live={preview.on} />
           </Hud>
         ) : null}
-        <ProfileDial which="tone" profile={profile} onChange={onChange} size={roomy ? 140 : 176} />
+        <ProfileDial which="tone" profile={profile} onChange={onChange} size={roomy ? 120 : 176} />
         <PreviewButton compact on={preview.on} busy={preview.busy} onPress={() => preview.toggle(profile)} />
       </View>
       <Foot>
@@ -130,5 +131,6 @@ const styles = StyleSheet.create({
   welcomeBody: { maxWidth: 320 },
   tiles: { gap: space.m },
   dial: { alignItems: 'center', gap: space.xl, paddingTop: space.s },
+  dialTight: { gap: space.s, paddingTop: 0 },
   foot: { marginTop: 'auto', gap: 6, paddingTop: space.s },
 });
