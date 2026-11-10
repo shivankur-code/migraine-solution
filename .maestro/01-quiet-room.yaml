@@ -50,10 +50,17 @@ name: Quiet room
     visible: "this text never appears"
     timeout: 4000
     optional: true
+# On a slow simulator the sound can take long enough to start that the screen has already dimmed
+# (15 s after Play). While dimmed, a touch only wakes the screen, so wake it first.
+- runFlow:
+    when:
+      visible: "Screen dimmed. Tap to brighten."
+    commands:
+      - tapOn: "Screen dimmed. Tap to brighten."
 - tapOn: "Fade to silence"
 - extendedWaitUntil:
     visible: "Optional: how did that go?"
-    timeout: 6000
+    timeout: 10000
 - takeScreenshot: 03-check-in
 - tapOn: "A bit easier"
 - assertVisible: "Noted. Rest well."
