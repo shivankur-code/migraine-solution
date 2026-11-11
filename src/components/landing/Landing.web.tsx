@@ -11,7 +11,6 @@ import { markWelcomed, noteWelcomeShown } from '../../lib/welcome';
 import { Instrument } from './Instrument.web';
 import './landing.css'; // typed by expo/types (referenced above); expo-env.d.ts is not committed
 
-const SOURCE_URL = 'https://github.com/shivankur-code/migraine-solution';
 const CTA = 'Open the quiet room';
 const LEAVE_MS = 240;
 
@@ -223,7 +222,6 @@ export function Landing() {
               </div>
               <nav className="lp-foot-links" aria-label="More">
                 <a href="/privacy.html" className="lp-link">Privacy</a>
-                <a href={SOURCE_URL} className="lp-link" rel="noopener noreferrer">Source on GitHub</a>
               </nav>
               <p>Made on your device. Nothing leaves it.</p>
             </div>
