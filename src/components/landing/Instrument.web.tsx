@@ -188,9 +188,10 @@ export function Instrument({ onEnter, onHow, reduced, ctaHref }: {
       </header>
 
       <div className="hero-copy">
-        <p className="hero-eyebrow">For migraine days</p>
+        <p className="hero-eyebrow">For migraine days <span className="hero-eyebrow-dot" aria-hidden>·</span> Tuned with AI</p>
         <h1 id="hero-title" className="hero-h1">A quiet room, with one soft sound in it.</h1>
-        <p className="hero-lead">Still makes a gentle sound on your phone, shaped by a few choices you make by ear. It starts in silence. Nothing leaves your device.</p>
+        <YourNoise reduced={reduced} ready={fontsReady} />
+        <p className="hero-lead">Still shapes <em className="hero-yours">your</em> gentle sound, guided by research and fine-tuned with AI.</p>
         <div className="hero-actions">
           <a href={ctaHref} className="hero-btn hero-btn-primary" onClick={enter}>Open the quiet room</a>
           <button type="button" className={`hero-btn hero-btn-ghost${listening ? ' is-on' : ''}`} onClick={toggleListen} aria-pressed={listening}>
@@ -208,6 +209,39 @@ export function Instrument({ onEnter, onHow, reduced, ctaHref }: {
         </button>
       </footer>
     </section>
+  );
+}
+
+/**
+ * "It's white noise." The middle word is struck through and replaced, white, pink, brown, until it
+ * settles on "your", in lamp: Still's idea in one line. Plays once, a second after the page is ready;
+ * under reduced motion it simply reads "It's your noise." Screen readers hear one plain sentence.
+ */
+const NOISES = ['white', 'pink', 'brown'];
+const STEP_MS = 1500, STRIKE_AT_MS = 650, FIRST_MS = 1100;
+function YourNoise({ reduced, ready }: { reduced: boolean; ready: boolean }) {
+  const [i, setI] = useState(reduced ? NOISES.length : 0);   // NOISES.length means "your"
+  const [struck, setStruck] = useState(false);
+  useEffect(() => {
+    if (reduced) { setI(NOISES.length); setStruck(false); return; }
+    if (!ready) return;
+    const timers: number[] = [];
+    NOISES.forEach((_, k) => {
+      const at = FIRST_MS + k * STEP_MS;
+      timers.push(window.setTimeout(() => setStruck(true), at + STRIKE_AT_MS));
+      timers.push(window.setTimeout(() => { setStruck(false); setI(k + 1); }, at + STEP_MS));
+    });
+    return () => timers.forEach(t => window.clearTimeout(t));
+  }, [reduced, ready]);
+  const yours = i >= NOISES.length;
+  const word = yours ? 'your' : NOISES[i];
+  return (
+    <p className="hero-noise">
+      <span className="hero-sr">Not white, pink or brown noise: your noise.</span>
+      <span aria-hidden>
+        It’s <span key={word} className={`hero-noise-word${yours ? ' is-yours' : ''}${struck ? ' is-struck' : ''}`}>{word}</span> noise.
+      </span>
+    </p>
   );
 }
 

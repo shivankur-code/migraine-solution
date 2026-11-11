@@ -76,6 +76,31 @@
   letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink3);
 }
 
+/* "It's white noise." -> "It's your noise.": the middle word is struck through, then replaced. */
+.hero-yours { font-style: normal; color: var(--lamp); }
+.hero-eyebrow-dot { margin: 0 0.4em; color: var(--lamp-deep); }
+.hero-noise {
+  margin: -4px 0 0; font-family: var(--font-display-italic, 'Fraunces_300Light_Italic'), serif; font-weight: 300;
+  font-size: clamp(22px, 2.4vw, 28px); line-height: 1.3; color: var(--ink2);
+}
+.hero-noise-word {
+  position: relative; display: inline-block; color: var(--ink);
+  animation: hero-noise-in 520ms var(--ease-out) both;
+  transition: color 420ms ease;
+}
+/* The strike: a lamp hairline drawn left to right across the word. */
+.hero-noise-word::after {
+  content: ''; position: absolute; left: -3px; right: -3px; top: 56%; height: 1.5px; border-radius: 1px;
+  background: var(--lamp); transform: scaleX(0); transform-origin: left center;
+  transition: transform 460ms var(--ease-out);
+}
+.hero-noise-word.is-struck { color: var(--ink3); }
+.hero-noise-word.is-struck::after { transform: scaleX(1); }
+.hero-noise-word.is-yours { color: var(--lamp); text-shadow: 0 0 22px rgba(194, 154, 98, 0.45); }
+@keyframes hero-noise-in { from { opacity: 0; transform: translateY(6px); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
+.hero-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+@media (prefers-reduced-motion: reduce) { .hero-noise-word { animation: none; transition: none; } .hero-noise-word::after { transition: none; } }
+
 /* ---------------------------------------------------------------- foot */
 .hero-foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 24px; }
 .hero-now { margin: 0; display: flex; align-items: center; gap: 12px; }
