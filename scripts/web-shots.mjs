@@ -18,13 +18,10 @@ const problems = [];
 // mode 'end' (scrolled to the bottom) reports only page items still stuck under a floating layer.
 async function overlaps(page, mode = 'rest') {
   return page.evaluate(mode => {
-    const floating = el => {
-      for (let n = el; n && n !== document.body; n = n.parentElement) {
-        const cs = getComputedStyle(n);
-        if ((cs.position === 'absolute' || cs.position === 'fixed') && Number(cs.zIndex) >= 5) return true;
-      }
-      return false;
-    };
+    // Only the tab bar and bottom sheets (with their scrim) float over the page by design. Anything else
+    // pinned over the page (like the old worse bar) is checked like ordinary content.
+    const floating = el => !!el.closest('[role="tablist"], [role="dialog"]')
+      || (el.getAttribute('aria-label') === 'Close' && !!el.parentElement?.querySelector('[role="dialog"]'));
     const CONTROL = 'button, a[href], input, [role="button"], [role="tab"], [role="radio"], [role="slider"], [role="link"], [role="switch"], [role="checkbox"]';
     const shown = el => {
       if (el.checkVisibility && !el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) return false;
