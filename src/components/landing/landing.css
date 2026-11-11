@@ -106,7 +106,7 @@
 @media (min-width: 960px) { .lp-italic { font-size: 30px; line-height: 36px; } }
 .lp-body { color: var(--ink); }
 .lp-lead { color: var(--ink2); }
-.lp-label { font-family: var(--font-ui); font-size: 13px; line-height: 18px; letter-spacing: 0.1px; color: var(--ink2); }
+.lp-label { font-family: var(--font-hud); font-size: 11px; line-height: 18px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink2); }
 .lp-caption { font-size: 12.5px; line-height: 18px; letter-spacing: 0.1px; color: var(--ink2); }
 .lp-caption.is-dim { color: var(--ink3); }
 
