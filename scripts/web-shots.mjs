@@ -137,6 +137,14 @@ async function run(name, viewport, { quick = false } = {}) {
   await shot('04-quiet-room', 3000);
   await page.getByLabel('Play my sound').click();
   await shot('05-playing', 6000);
+  // The stop-for-safety button must be in view while sound plays, on every size, without scrolling,
+  // and clear of the tab bar.
+  {
+    const worse = await page.getByLabel('This is making it worse').locator('visible=true').first().boundingBox();
+    const tabs = viewport.width < 960 ? await page.locator('[role="tablist"]').locator('visible=true').first().boundingBox().catch(() => null) : null;
+    const limit = tabs ? tabs.y : viewport.height;
+    if (!worse || worse.y < 0 || worse.y + worse.height > limit) problems.push(`${name} 05-playing: "This is making it worse" is not fully in view without scrolling (${worse ? Math.round(worse.y) + '-' + Math.round(worse.y + worse.height) : 'missing'}, limit ${Math.round(limit)})`);
+  }
   // Phones: the room may scroll; check the lower half of it while playing too.
   if (viewport.width < 960) {
     await page.mouse.move(viewport.width / 2, viewport.height * 0.4);
