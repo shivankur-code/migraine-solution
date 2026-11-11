@@ -309,13 +309,19 @@ export default function QuietRoom() {
               {header}
               {lamp}
               {statusLine}
-              {loudness}
+              {/* While sound plays, "This is making it worse" takes the loudness controls' place (their space is
+                  kept): right under the lamp, in the flow, so it is visible without scrolling on the smallest
+                  phones and can never cover Dark screen or Softer. */}
+              <View>
+                {loudness}
+                {playingNow ? (
+                  <View style={styles.worseSlot}>
+                    <Button kind="rose" label="This is making it worse" icon="hand-left-outline" onPress={worse} haptic="always" hint="Stops the sound and makes the next one start quieter" />
+                  </View>
+                ) : null}
+              </View>
               {escapes}
-              {/* While sound plays, "This is making it worse" takes the disclaimer's place, in the flow rather than
-                  pinned over it, so on no screen size can it cover Dark screen or Softer. */}
-              {playingNow
-                ? <Button kind="rose" label="This is making it worse" icon="hand-left-outline" onPress={worse} haptic="always" hint="Stops the sound and makes the next one start quieter" />
-                : disclaimer}
+              {disclaimer}
             </>
           )}
         </View>
@@ -373,5 +379,6 @@ const styles = StyleSheet.create({
   pillRow: { alignItems: 'flex-start' },
   loudness: { gap: 10 },
   escapes: { flexDirection: 'row', gap: 12 },
+  worseSlot: { ...StyleSheet.absoluteFillObject, justifyContent: 'center' },
   escape: { flex: 1, minWidth: 0 },
 });
