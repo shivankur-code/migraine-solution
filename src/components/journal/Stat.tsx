@@ -3,7 +3,7 @@
 // instead of a dash that looks broken.
 import { StyleSheet, View } from 'react-native';
 import { colors } from '../../lib/theme';
-import { Body, Eyebrow, Numeral } from '../../lib/ui';
+import { Body, Eyebrow, Heading, Numeral } from '../../lib/ui';
 
 export type StatProps = {
   /** The number or word. `null` / `undefined` is "nothing yet". */
@@ -20,7 +20,10 @@ export function Stat({ value, label, divided }: StatProps) {
   return (
     <View style={[styles.stat, divided && styles.divided]} accessible accessibilityRole="text" accessibilityLabel={`${label}: ${empty ? 'nothing yet' : text}`}>
       <Eyebrow numberOfLines={2}>{label}</Eyebrow>
-      {empty ? <Body color={colors.ink3} style={styles.empty}>{text}</Body> : <Numeral numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{text}</Numeral>}
+      {empty ? <Body color={colors.ink3} style={styles.empty}>{text}</Body>
+        // A number is set large; a word (a sound's name) a size down, so it fits a third of a phone.
+        : typeof value === 'number' ? <Numeral numberOfLines={1}>{text}</Numeral>
+        : <Heading style={styles.word}>{text}</Heading>}
     </View>
   );
 }
@@ -30,4 +33,5 @@ const styles = StyleSheet.create({
   divided: { borderLeftWidth: 1, borderLeftColor: 'rgba(255,255,255,0.09)', paddingLeft: 14 },
   // Sits on the numeral's baseline so the row lines up whether a stat has a number or not.
   empty: { minHeight: 42, textAlignVertical: 'bottom', paddingTop: 14 },
+  word: { minHeight: 42, paddingTop: 12 },
 });

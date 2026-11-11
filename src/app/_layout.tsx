@@ -43,7 +43,9 @@ export default function Layout() {
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.night }}>
       <StatusBar style="light" />
       {/* Desktop: the same soft gradient runs behind the sidebar, so the window reads as one surface. */}
-      {wide ? <LinearGradient pointerEvents="none" colors={[colors.lift.hush, colors.scene.hush.sky[1], colors.night]} locations={[0, 0.45, 1]} style={StyleSheet.absoluteFill} /> : null}
+      {wide ? <LinearGradient pointerEvents="none" colors={[colors.lift.hush, colors.scene.hush.sky[1], colors.night]} locations={[0, 0.45, 1]} style={[StyleSheet.absoluteFill, { opacity: 0.94 }]} /> : null}
+      {/* ...with the same light tint the pages use at their usual loudness, so no edge shows. */}
+      {wide ? <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: colors.black, opacity: 0.12 }]} /> : null}
       <Tabs
         tabBar={props => (wide ? <Sidebar {...props} /> : <TabBar {...props} />)}
         screenOptions={{

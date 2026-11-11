@@ -633,7 +633,7 @@ export const styles = StyleSheet.create({
   eyebrow: { fontFamily: fonts.hud, fontSize: 11, lineHeight: 16, letterSpacing: 2.4, textTransform: 'uppercase', color: colors.ink2 },
   // controls
   button: { flexDirection: 'row', gap: 10, minHeight: 56, borderWidth: 1, borderColor: 'transparent', borderRadius: radius.button, paddingVertical: 15, paddingHorizontal: 22, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  buttonWithSub: { justifyContent: 'flex-start', paddingHorizontal: 18, gap: 12, borderRadius: radius.card },
+  buttonWithSub: { justifyContent: 'flex-start', paddingHorizontal: 14, gap: 10, borderRadius: radius.card },
   buttonLines: { flex: 1, gap: 2, minWidth: 0 },
   primary: { backgroundColor: colors.lamp, borderColor: 'rgba(255,236,205,0.28)', boxShadow: '0 8px 24px -8px rgba(194,154,98,0.55)' },
   primaryFill: { borderRadius: radius.button, boxShadow: 'inset 0 1px 0 rgba(255,244,225,0.5), inset 0 -1px 0 rgba(0,0,0,0.18)' },

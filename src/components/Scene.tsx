@@ -1,5 +1,5 @@
 // The room behind every screen: one continuous gradient per scene (a soft lift at the top fading to
-// night), a faint warm glow, and a whole-screen tint that deepens with loudness. No floor and no
+// night) and a whole-screen tint that deepens with loudness. No floor and no
 // horizon: a band across the middle read as two screens stacked. No grain, no drift. Colours never interpolate at runtime
 // (Reanimated on web cannot animate gradient colours), so every change is the opacity of a stacked layer.
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -82,8 +82,6 @@ export function Scene({ texture, depth = 1, playing = false, softer = false, wor
       <Animated.View style={[StyleSheet.absoluteFill, glowStyle]}>
         <Sky texture={stack.base} />
         {stack.layers.map(l => <FadeSky key={l.id} opacity={l.opacity} texture={l.texture} />)}
-        {/* A faint warm glow low on the left, the lamp's light on the glass. */}
-        <LinearGradient colors={[colors.lampGlow, 'rgba(194,154,98,0)']} start={{ x: 0, y: 0.85 }} end={{ x: 0.55, y: 0.35 }} style={[StyleSheet.absoluteFill, styles.warm]} />
       </Animated.View>
       <AnimatedGradient colors={[colors.night, colors.black]} style={[StyleSheet.absoluteFill, tintStyle]} />
     </View>
@@ -103,5 +101,4 @@ function FadeSky({ opacity, texture }: { opacity: SharedValue<number>; texture: 
 
 const styles = StyleSheet.create({
   root: { zIndex: z.scene, overflow: 'hidden', backgroundColor: colors.night },
-  warm: { opacity: 0.6 },
 });

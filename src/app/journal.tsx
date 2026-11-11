@@ -90,7 +90,7 @@ export default function JournalScreen() {
 
         <Card style={styles.stats}>
           <Stat value={empty ? null : m.usedEpisodes} label="Hard days" />
-          <Stat divided value={m.medianListeningMin === null ? null : `${Math.round(m.medianListeningMin)}m`} label="Usual length" />
+          <Stat divided value={m.medianListeningMin === null ? null : m.medianListeningMin < 1 ? 'Under a minute' : `${Math.round(m.medianListeningMin)} min`} label="Usual length" />
           <Stat divided value={act.helpedMost?.sound ?? textureName(texture)} label={act.helpedMost ? 'Helped most' : 'Your sound'} />
         </Card>
 
