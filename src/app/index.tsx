@@ -375,7 +375,7 @@ const styles = StyleSheet.create({
   room: { flex: 1 },
   column: { gap: 18 },
   header: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  pill: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 14, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.hairline, backgroundColor: colors.smoke },
+  pill: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 14, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.glassEdge, borderTopColor: colors.glassLit, backgroundColor: colors.glassFill },
   pillRow: { alignItems: 'flex-start' },
   loudness: { gap: 10 },
   escapes: { flexDirection: 'row', gap: 12 },

@@ -280,7 +280,9 @@ export function Press({ children, style, haptic = 'tap', scaleTo = 0.97, largeSu
 }
 
 // ---------------------------------------------------------------------------------------------
-// Button. Four kinds; the two old names still compile (outline -> smoke, warn -> rose).
+// Button. Four kinds, all pills: primary (the lamp, lit from above, at most one per screen), smoke
+// (frosted glass), quiet (lamp-coloured words) and rose (the safety stop, rose-tinted glass).
+// The two old names still compile (outline -> smoke, warn -> rose).
 
 export type ButtonKind = 'primary' | 'smoke' | 'quiet' | 'rose' | 'outline' | 'warn';
 
@@ -296,8 +298,8 @@ export function Button({ label, onPress, kind = 'smoke', disabled, style, icon, 
 }) {
   const material = useMaterial();
   const k: 'primary' | 'smoke' | 'quiet' | 'rose' = kind === 'outline' ? 'smoke' : kind === 'warn' ? 'rose' : kind;
-  const fg = k === 'primary' ? colors.onLamp : k === 'smoke' ? colors.ink : colors.ink2;
-  const glyph = k === 'primary' ? colors.onLamp : k === 'rose' ? colors.rose : on ? colors.lamp : colors.ink2;
+  const fg = k === 'primary' ? colors.onLamp : k === 'smoke' ? colors.ink : k === 'rose' ? colors.ink : colors.lamp;
+  const glyph = k === 'primary' ? colors.onLamp : k === 'rose' ? colors.rose : on || k === 'quiet' ? colors.lamp : colors.ink2;
   return (
     <Press
       accessibilityRole="button" accessibilityLabel={accessibilityLabel ?? label.replace(/^[^A-Za-z0-9]+/, '')} accessibilityHint={hint} accessibilityState={{ disabled: !!disabled }}
@@ -305,6 +307,7 @@ export function Button({ label, onPress, kind = 'smoke', disabled, style, icon, 
       style={[styles.button, k === 'primary' && styles.primary, k === 'smoke' && styles.smoke, k === 'quiet' && styles.quiet, k === 'rose' && styles.rose,
         (k === 'smoke' || k === 'rose') && material.fill, on && { borderColor: colors.lampDeep }, sub ? styles.buttonWithSub : null, disabled && styles.disabled, style]}
     >
+      {k === 'primary' ? <LinearGradient colors={[colors.lampTop, colors.lampBottom]} style={[StyleSheet.absoluteFill, styles.primaryFill]} /> : null}
       {icon ? <Ionicons name={icon} size={sub ? 20 : 18} color={glyph} /> : null}
       {sub ? (
         <View style={styles.buttonLines}>
@@ -548,7 +551,7 @@ export function Screen({ children, scrollRef, overlay, center, texture, depth = 
               <Press accessibilityRole="button" accessibilityLabel="Still: open the welcome page" onPress={() => router.navigate('/welcome')}
                 style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: -12, marginBottom: 4 }}>
                 <Mark size={22} />
-                <Text style={{ color: colors.ink2, fontFamily: fonts.ui, fontSize: 12.5, letterSpacing: 4, textTransform: 'uppercase' }}>Still</Text>
+                <Text style={{ color: colors.ink, fontFamily: fonts.hud, fontSize: 12.5, letterSpacing: 6, textTransform: 'uppercase' }}>Still</Text>
               </Press>
             ) : null}
             <Animated.View style={[styles.content, center && styles.centered, hold, fader]}>{children}</Animated.View>
@@ -594,11 +597,14 @@ export function Inert({ when, style, children, pointerEvents }: { when: boolean;
   );
 }
 
-/** The old card: smoke fill, hairline border, radius 24. `accent` draws the selected (lampDeep) border. */
+/** A glass panel: frosted fill, hairline edge lit along the top, radius 22. `accent` draws the selected (lampDeep) border. */
 export function Card({ children, style, accent }: { children: ReactNode; style?: StyleProp<ViewStyle>; accent?: boolean }) {
   const material = useMaterial();
   return <View style={[styles.card, material.fill, accent && { borderColor: colors.lampDeep }, style]}>{children}</View>;
 }
+
+// Frosted glass on the web (iOS and Android get the translucent fill alone: a blur per panel costs too much there).
+const glassBlur = (Platform.OS === 'web' ? { backdropFilter: 'blur(18px) saturate(1.3)' } : {}) as ViewStyle;
 
 export const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.night },
@@ -614,37 +620,38 @@ export const styles = StyleSheet.create({
   // type
   display: { fontFamily: fonts.display, fontSize: 40, lineHeight: 44, letterSpacing: -0.8, color: colors.ink },
   displayWide: { fontFamily: fonts.display, fontSize: 56, lineHeight: 60, letterSpacing: -1.1, color: colors.ink },
-  title: { fontFamily: fonts.title, fontSize: 26, lineHeight: 32, letterSpacing: -0.3, color: colors.ink },
-  titleWide: { fontFamily: fonts.title, fontSize: 30, lineHeight: 36, letterSpacing: -0.3, color: colors.ink },
-  greeting: { fontFamily: fonts.displayItalic, fontSize: 24, lineHeight: 30, letterSpacing: -0.2, color: colors.ink2 },
-  greetingWide: { fontFamily: fonts.displayItalic, fontSize: 30, lineHeight: 36, letterSpacing: -0.2, color: colors.ink2 },
-  heading: { fontFamily: fonts.title, fontSize: 20, lineHeight: 26, letterSpacing: -0.1, color: colors.ink },
-  numeral: { fontFamily: fonts.display, fontSize: 44, lineHeight: 48, letterSpacing: -0.6, color: colors.ink, fontVariant: ['tabular-nums'] },
+  title: { fontFamily: fonts.display, fontSize: 30, lineHeight: 36, letterSpacing: -0.4, color: colors.ink },
+  titleWide: { fontFamily: fonts.display, fontSize: 40, lineHeight: 46, letterSpacing: -0.6, color: colors.ink },
+  greeting: { fontFamily: fonts.display, fontSize: 30, lineHeight: 36, letterSpacing: -0.4, color: colors.ink },
+  greetingWide: { fontFamily: fonts.display, fontSize: 40, lineHeight: 46, letterSpacing: -0.6, color: colors.ink },
+  heading: { fontFamily: fonts.display, fontSize: 22, lineHeight: 28, letterSpacing: -0.2, color: colors.ink },
+  numeral: { fontFamily: fonts.display, fontSize: 36, lineHeight: 42, letterSpacing: -0.5, color: colors.ink, fontVariant: ['tabular-nums'] },
   body: { fontFamily: fonts.body, fontSize: 16, lineHeight: 24, color: colors.ink },
   control: { fontFamily: fonts.ui, fontSize: 16, lineHeight: 22, color: colors.ink },
   label: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18, letterSpacing: 0.1, color: colors.ink2 },
   caption: { fontFamily: fonts.body, fontSize: 12.5, lineHeight: 18, letterSpacing: 0.1, color: colors.ink2 },
-  eyebrow: { fontFamily: fonts.ui, fontSize: 11.5, lineHeight: 16, letterSpacing: 1.4, textTransform: 'uppercase', color: colors.ink2 },
+  eyebrow: { fontFamily: fonts.hud, fontSize: 11, lineHeight: 16, letterSpacing: 2.4, textTransform: 'uppercase', color: colors.ink2 },
   // controls
-  button: { flexDirection: 'row', gap: 10, minHeight: 56, borderWidth: 1, borderColor: 'transparent', borderRadius: radius.button, paddingVertical: 15, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center' },
-  buttonWithSub: { justifyContent: 'flex-start', paddingHorizontal: 16, gap: 12 },
+  button: { flexDirection: 'row', gap: 10, minHeight: 56, borderWidth: 1, borderColor: 'transparent', borderRadius: radius.button, paddingVertical: 15, paddingHorizontal: 22, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  buttonWithSub: { justifyContent: 'flex-start', paddingHorizontal: 14, gap: 10, borderRadius: radius.card },
   buttonLines: { flex: 1, gap: 2, minWidth: 0 },
-  primary: { backgroundColor: colors.lamp, borderColor: colors.lamp },
-  smoke: { backgroundColor: colors.smoke, borderColor: colors.hairline },
+  primary: { backgroundColor: colors.lamp, borderColor: 'rgba(255,236,205,0.28)', boxShadow: '0 8px 24px -8px rgba(194,154,98,0.55)' },
+  primaryFill: { borderRadius: radius.button, boxShadow: 'inset 0 1px 0 rgba(255,244,225,0.5), inset 0 -1px 0 rgba(0,0,0,0.18)' },
+  smoke: { backgroundColor: colors.glassFill, borderColor: colors.glassEdge, borderTopColor: colors.glassLit, ...glassBlur },
   quiet: { backgroundColor: 'transparent', borderColor: 'transparent' },
-  rose: { minHeight: 52, paddingVertical: 13, backgroundColor: colors.smoke, borderColor: colors.roseLine, borderLeftWidth: 2, borderLeftColor: colors.rose },
+  rose: { minHeight: 52, paddingVertical: 13, backgroundColor: colors.roseFill, borderColor: colors.roseLine, ...glassBlur },
   disabled: { opacity: 0.38 },
-  selected: { backgroundColor: colors.smokePressed, borderColor: colors.lampDeep },
+  selected: { backgroundColor: 'rgba(194,154,98,0.12)', borderColor: colors.lampDeep },
   segmented: { flexDirection: 'row', gap: 8 },
   segmentedStacked: { flexDirection: 'column' },
-  segment: { flex: 1, flexDirection: 'row', gap: 6, minHeight: 48, borderWidth: 1, borderColor: colors.hairline, backgroundColor: colors.smoke, borderRadius: radius.pill, paddingVertical: 10, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center' },
+  segment: { flex: 1, flexDirection: 'row', gap: 6, minHeight: 48, borderWidth: 1, borderColor: colors.glassEdge, backgroundColor: colors.glassFill, borderRadius: radius.pill, paddingVertical: 10, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center' },
   segmentStacked: { flex: 0, paddingHorizontal: 18 },
   segmentLabel: { flexShrink: 1, textAlign: 'center' },
   hidden: { display: 'none' },
-  segmentOn: { backgroundColor: colors.smokePressed, borderColor: colors.lampDeep },
+  segmentOn: { backgroundColor: 'rgba(194,154,98,0.12)', borderColor: colors.lampDeep },
   controlFit: { fontSize: 14.5, whiteSpace: 'nowrap' } as TextStyle,
-  chip: { flexDirection: 'row', gap: 8, minHeight: 48, borderWidth: 1, borderColor: colors.hairline, backgroundColor: colors.smoke, borderRadius: radius.chip, paddingVertical: 12, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
-  tile: { flexGrow: 1, borderRadius: radius.tile, borderWidth: 1, borderColor: colors.hairline, backgroundColor: colors.smoke, padding: 16, gap: 10, overflow: 'hidden' },
+  chip: { flexDirection: 'row', gap: 8, minHeight: 48, borderWidth: 1, borderColor: colors.glassEdge, borderTopColor: colors.glassLit, backgroundColor: colors.glassFill, borderRadius: radius.chip, paddingVertical: 12, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
+  tile: { flexGrow: 1, borderRadius: radius.tile, borderWidth: 1, borderColor: colors.glassEdge, borderTopColor: colors.glassLit, backgroundColor: colors.glassFill, padding: 16, gap: 10, overflow: 'hidden' },
   tileSquare: { flexBasis: '46%', minHeight: 104, justifyContent: 'space-between' },
   // Full width without growing: a 100% flex-basis would mean 100% of the HEIGHT in a column list.
   tileWide: { flexGrow: 0, flexBasis: 'auto', width: '100%', minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 14 },
@@ -652,13 +659,13 @@ export const styles = StyleSheet.create({
   tileIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.smokePressed },
   tileText: { gap: 2, minWidth: 0 },
   tileCheck: { position: 'absolute', top: 14, right: 14 },
-  rowWrap: { borderBottomWidth: 1, borderBottomColor: colors.hairline },
+  rowWrap: { borderBottomWidth: 1, borderBottomColor: colors.glassEdge },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 60, paddingVertical: 12, paddingHorizontal: 4 },
   rowText: { flex: 1, gap: 2, minWidth: 0 },
   rowBody: { paddingBottom: 16, gap: 16 },
   status: { minHeight: 48, justifyContent: 'center' },
   statusWorse: { borderLeftWidth: 2, borderLeftColor: colors.rose, paddingLeft: 12 },
   statusInner: { gap: 4 },
-  card: { backgroundColor: colors.smoke, borderWidth: 1, borderColor: colors.hairline, borderRadius: radius.card, padding: 18, gap: 8 },
+  card: { backgroundColor: colors.glassFill, borderWidth: 1, borderColor: colors.glassEdge, borderTopColor: colors.glassLit, borderRadius: radius.card, padding: 20, gap: 10, ...glassBlur },
   cardTitle: { color: colors.ink, fontFamily: fonts.title, fontSize: 20, lineHeight: 26 },
 });

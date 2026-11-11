@@ -72,7 +72,7 @@ export default function MySound() {
 
   const extras = (
     <>
-      <View style={s.rows}>
+      <Card style={s.rows}>
         <Row icon="headset-outline" label="Let Still choose by ear" sub="Pick the calmer of two, a few times · 3 min"
           expanded={open === 'ear'} onPress={() => toggle('ear')}>
           <Tests profile={profile} onChange={update} keys={EAR_TESTS} />
@@ -84,7 +84,7 @@ export default function MySound() {
           <SharingCard />
           <SupportCard />
         </Row>
-      </View>
+      </Card>
       <Button kind="quiet" icon="refresh-outline" label="Start over" onPress={startOver} />
       <Caption color={colors.ink3}>Still is for comfort. It does not diagnose, treat or prevent migraine.</Caption>
     </>
@@ -101,6 +101,6 @@ const s = StyleSheet.create({
   header: { gap: space.xs },
   dials: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around', rowGap: 18, paddingVertical: 22 },
   dial: { flexBasis: '45%', alignItems: 'center' },
-  // Rows draw a hairline beneath themselves; this closes the list on top.
-  rows: { borderTopWidth: 1, borderTopColor: colors.hairline },
+  // The two rows share one glass panel; the last row's hairline is hidden by the panel's own edge.
+  rows: { paddingVertical: 4, paddingHorizontal: 14, gap: 0 },
 });

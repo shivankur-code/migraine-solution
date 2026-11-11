@@ -47,7 +47,10 @@ jobs:
         if: github.event_name != 'push'
         run: |
           npm i --no-save --no-audit --no-fund playwright
-          npx playwright install --with-deps chromium
+          # The runner already has Chrome's system libraries; the extra packages (fonts) come from Ubuntu's
+          # mirrors, which are sometimes unreachable from runners. Try them, but don't fail the build on them.
+          npx playwright install-deps chromium || echo "::warning::Could not install the browser's extra system packages; continuing"
+          npx playwright install chromium
           (python3 -m http.server 8080 --directory dist-web >/dev/null 2>&1 &)
           sleep 2
           node scripts/web-shots.mjs http://127.0.0.1:8080 web-shots

@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
   switchText: { flex: 1, gap: 2 },
   // 16 px keeps iOS Safari from zooming into the field.
   input: {
-    minHeight: 48, borderWidth: 1, borderColor: colors.hairline, borderRadius: radius.chip, backgroundColor: colors.smoke,
+    minHeight: 48, borderWidth: 1, borderColor: colors.glassEdge, borderRadius: 14, backgroundColor: colors.glassFill,
     paddingHorizontal: 14, paddingVertical: 12, color: colors.ink, fontFamily: fonts.body, fontSize: 16,
   },
 });

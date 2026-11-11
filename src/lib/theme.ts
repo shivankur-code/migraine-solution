@@ -20,7 +20,15 @@ export const colors = {
     fan:   { sky: ['#0E0C0B', '#120F0D'] as const, floor: ['#15110E', '#18130F'] as const, horizon: false },
     hush:  { sky: ['#090B08', '#0D110B'] as const, floor: ['#10140C', '#12170E'] as const, horizon: false },
   } satisfies Record<SceneTexture, { sky: readonly [string, string]; floor: readonly [string, string]; horizon: boolean }>,
-  // the one material
+  // Quiet Glass: each scene's soft lift at the top of the screen (one continuous gradient, no horizon)
+  lift: { rain: '#161724', ocean: '#0F1723', fan: '#191512', hush: '#121610' } satisfies Record<SceneTexture, string>,
+  // the one material: frosted glass panels, with a lit top edge
+  glassFill: 'rgba(255,255,255,0.055)',
+  glassEdge: 'rgba(255,255,255,0.09)',
+  glassLit: 'rgba(255,255,255,0.16)',
+  lampTop: '#D3AE77',      // the main button's lit gradient, top to bottom
+  lampBottom: '#B48B55',
+  roseFill: 'rgba(210,142,124,0.14)',
   smoke: 'rgba(255,255,255,0.04)',
   smokePressed: 'rgba(255,255,255,0.07)',
   hairline: 'rgba(255,255,255,0.07)',
@@ -51,7 +59,7 @@ export const colors = {
   accent: '#C29A62', accentDeep: '#7A6140', moon: '#C29A62', warn: '#D28E7C',
 };
 
-export const radius = { card: 24, tile: 24, button: 18, chip: 14, pill: 999, sheet: 28 };
+export const radius = { card: 22, tile: 20, button: 999, chip: 999, pill: 999, sheet: 28 };
 export const space = { xs: 4, s: 8, m: 12, l: 16, xl: 24, xxl: 36, xxxl: 56 };
 export const z = { scene: 0, content: 1, worseBar: 5, tabBar: 6, sheet: 8, veil: 10, dark: 11, setup: 20 };
 
