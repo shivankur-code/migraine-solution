@@ -12,7 +12,7 @@ import { PreviewButton, ProfileDial, TextureTiles, usePreview } from '../compone
 import { AiReviewCard } from '../components/AiReviewCard';
 import { SupportCard } from '../components/SupportCard';
 import { AccountCard, SharingCard } from '../components/AccountCard';
-import { Body, Button, Caption, Card, Columns, confirmAction, Row, Screen, Title, useTablet, useWide } from '../lib/ui';
+import { Body, Button, Caption, Card, Columns, confirmAction, Kicker, Row, Screen, Title, useTablet, useWide } from '../lib/ui';
 import { colors, space } from '../lib/theme';
 import { track } from '../lib/activity';
 
