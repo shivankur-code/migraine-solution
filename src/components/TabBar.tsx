@@ -9,7 +9,7 @@ import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withSpring
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { colors, radius, z } from '../lib/theme';
 import { cross, lum, spring, timing, useReducedMotion, useReducedTransparency } from '../lib/motion';
-import { Label, Press, useRovingFocus } from '../lib/ui';
+import { Label, Press, styles as uiStyles, useRovingFocus } from '../lib/ui';
 import { checkInProgress } from './room/CheckIn';
 
 /** The three rooms, in order. Any other route (the web landing) gets no tab and hides the bar. */
@@ -126,7 +126,7 @@ function FloatingBar({ state, descriptors, emitter, navigateToTab, insets }: Bot
               >
                 {reduced ? <FadePill on={focused} /> : null}
                 {options.tabBarIcon?.({ focused, color, size: 24 })}
-                <Label color={color} style={styles.label} numberOfLines={1}>{label}</Label>
+                <Label color={color} style={[uiStyles.nav, styles.label]} numberOfLines={1}>{label}</Label>
               </Press>
             );
           })}
@@ -159,5 +159,6 @@ const styles = StyleSheet.create({
   pill: { position: 'absolute', top: PILL_INSET, bottom: PILL_INSET, left: PILL_INSET, borderRadius: radius.button, backgroundColor: colors.lampGlow },
   fadePill: { position: 'absolute', top: PILL_INSET, bottom: PILL_INSET, left: PILL_INSET, right: PILL_INSET, borderRadius: radius.button, backgroundColor: colors.lampGlow },
   item: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2, paddingVertical: 8, paddingHorizontal: 4 },
-  label: { fontSize: 11.5, lineHeight: 16 },
+  // Three across a 360 pt phone: a size down from the sidebar's, tracked a little tighter.
+  label: { fontSize: 10.5, lineHeight: 16, letterSpacing: 1.6 },
 });

@@ -12,7 +12,7 @@ import { PreviewButton, ProfileDial, TextureTiles, usePreview } from '../compone
 import { AiReviewCard } from '../components/AiReviewCard';
 import { SupportCard } from '../components/SupportCard';
 import { AccountCard, SharingCard } from '../components/AccountCard';
-import { Body, Button, Caption, Card, Columns, confirmAction, Row, Screen, Title, useTablet, useWide } from '../lib/ui';
+import { Body, Button, Caption, Card, Columns, confirmAction, Kicker, Row, Screen, Title, useTablet, useWide } from '../lib/ui';
 import { colors, space } from '../lib/theme';
 import { track } from '../lib/activity';
 
@@ -48,6 +48,7 @@ export default function MySound() {
   const mixer = (
     <>
       <View style={s.header}>
+        <Kicker>My sound</Kicker>
         <Title accessibilityRole="header">Your sound</Title>
         <Body color={colors.ink2}>Turn the dials and watch your sound take shape. Changes save by themselves.</Body>
       </View>

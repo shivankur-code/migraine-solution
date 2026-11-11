@@ -105,7 +105,9 @@ export function Columns({ left, right, rightWidth = 440, gap = 40, align = 'flex
 }
 
 // ---------------------------------------------------------------------------------------------
-// Type. Ten roles, two families. Sizes step up on desktop for the three largest roles only.
+// Type: the welcome page's system on every screen. Fraunces Light for every headline and number,
+// Inter for reading and for buttons, Manrope capitals for every small label (Eyebrow, Meta) and for
+// navigation. Sizes step up on desktop for the three largest roles only.
 
 export type TypeProps = Omit<TextProps, 'style'> & { children?: ReactNode; color?: string; center?: boolean; style?: StyleProp<TextStyle> };
 
@@ -132,6 +134,10 @@ export const Control = typeRole('Control', () => styles.control, 2.0);
 export const Label = typeRole('Label', () => styles.label, 2.0);
 export const Caption = typeRole('Caption', () => styles.caption, 2.0);
 export const Eyebrow = typeRole('Eyebrow', () => styles.eyebrow, 2.0);
+/** The page's kicker above its title, in lamp, as on the welcome page ("FOR MIGRAINE DAYS"). */
+export const Kicker = typeRole('Kicker', () => styles.kicker, 2.0);
+/** A quiet meta line in light Manrope capitals, e.g. "Ocean · Hushed · fades after 30 min". */
+export const Meta = typeRole('Meta', () => styles.meta, 2.0);
 
 // Thin aliases for the untouched screens: H1 -> Title, H2 -> Heading, Muted -> Body in ink2, Muted small -> Caption in ink3.
 export const H1 = Title;
@@ -490,7 +496,7 @@ export function Status({ children, sub, live = 'polite', worse, center, style }:
     <View accessibilityLiveRegion={live} aria-live={live} style={[styles.status, worse && styles.statusWorse, style]}>
       <Animated.View style={[styles.statusInner, center && { alignItems: 'center' }, animated]}>
         {shown.children == null || shown.children === '' ? null : <Body color={colors.ink2} center={center}>{shown.children}</Body>}
-        {shown.sub ? <Caption center={center}>{shown.sub}</Caption> : null}
+        {shown.sub ? <Meta center={center}>{shown.sub}</Meta> : null}
       </Animated.View>
     </View>
   );
@@ -551,7 +557,7 @@ export function Screen({ children, scrollRef, overlay, center, texture, depth = 
               <Press accessibilityRole="button" accessibilityLabel="Still: open the welcome page" onPress={() => router.navigate('/welcome')}
                 style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: -12, marginBottom: 4 }}>
                 <Mark size={22} />
-                <Text style={{ color: colors.ink, fontFamily: fonts.hud, fontSize: 12.5, letterSpacing: 6, textTransform: 'uppercase' }}>Still</Text>
+                <Text style={{ color: colors.ink, fontFamily: fonts.hud, fontSize: 13, letterSpacing: 7, textTransform: 'uppercase' }}>Still</Text>
               </Press>
             ) : null}
             <Animated.View style={[styles.content, center && styles.centered, hold, fader]}>{children}</Animated.View>
@@ -630,7 +636,11 @@ export const styles = StyleSheet.create({
   control: { fontFamily: fonts.ui, fontSize: 16, lineHeight: 22, color: colors.ink },
   label: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18, letterSpacing: 0.1, color: colors.ink2 },
   caption: { fontFamily: fonts.body, fontSize: 12.5, lineHeight: 18, letterSpacing: 0.1, color: colors.ink2 },
-  eyebrow: { fontFamily: fonts.hud, fontSize: 11, lineHeight: 16, letterSpacing: 2.4, textTransform: 'uppercase', color: colors.ink2 },
+  eyebrow: { fontFamily: fonts.hud, fontSize: 11, lineHeight: 16, letterSpacing: 3, textTransform: 'uppercase', color: colors.ink2 },
+  kicker: { fontFamily: fonts.hud, fontSize: 11, lineHeight: 16, letterSpacing: 3.3, textTransform: 'uppercase', color: colors.lamp },
+  meta: { fontFamily: fonts.hudLight, fontSize: 11.5, lineHeight: 18, letterSpacing: 2.2, textTransform: 'uppercase', color: colors.ink2 },
+  /** Navigation labels (sidebar, tab bar), as the welcome page's nav. */
+  nav: { fontFamily: fonts.hud, fontSize: 12, lineHeight: 16, letterSpacing: 2.4, textTransform: 'uppercase' },
   // controls
   button: { flexDirection: 'row', gap: 10, minHeight: 56, borderWidth: 1, borderColor: 'transparent', borderRadius: radius.button, paddingVertical: 15, paddingHorizontal: 22, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   buttonWithSub: { justifyContent: 'flex-start', paddingHorizontal: 14, gap: 10, borderRadius: radius.card },
@@ -667,5 +677,5 @@ export const styles = StyleSheet.create({
   statusWorse: { borderLeftWidth: 2, borderLeftColor: colors.rose, paddingLeft: 12 },
   statusInner: { gap: 4 },
   card: { backgroundColor: colors.glassFill, borderWidth: 1, borderColor: colors.glassEdge, borderTopColor: colors.glassLit, borderRadius: radius.card, padding: 20, gap: 10, ...glassBlur },
-  cardTitle: { color: colors.ink, fontFamily: fonts.title, fontSize: 20, lineHeight: 26 },
+  cardTitle: { color: colors.ink, fontFamily: fonts.display, fontSize: 22, lineHeight: 28 },
 });

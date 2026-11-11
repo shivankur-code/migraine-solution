@@ -7,7 +7,7 @@ import { figureFor } from '../../lib/cymatics';
 import { Cymatics } from '../Cymatics';
 import { Hud } from '../Hud';
 import { colors, space } from '../../lib/theme';
-import { Body, Button, Display, Eyebrow, Tile, Title, type IconName } from '../../lib/ui';
+import { Body, Button, Display, Eyebrow, Kicker, Tile, Title, type IconName } from '../../lib/ui';
 import { Mark } from '../Mark';
 import { DIALS, PreviewButton, ProfileDial, TextureTiles, textureName, usePreview, type Hardest, type Texture } from '../Studio';
 
@@ -25,7 +25,7 @@ export const HARDEST: { value: Hardest; label: string; sub: string; icon: IconNa
 export function PaneHeader({ kicker, title, sub }: { kicker: string; title: string; sub: string }) {
   return (
     <View style={styles.header}>
-      <Eyebrow>{kicker}</Eyebrow>
+      <Kicker>{kicker}</Kicker>
       <Title>{title}</Title>
       <Body color={colors.ink2}>{sub}</Body>
     </View>

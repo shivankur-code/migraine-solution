@@ -7,6 +7,7 @@ import { Fraunces_300Light_Italic } from '@expo-google-fonts/fraunces/300Light_I
 import { Fraunces_400Regular } from '@expo-google-fonts/fraunces/400Regular';
 import { Inter_400Regular } from '@expo-google-fonts/inter/400Regular';
 import { Inter_500Medium } from '@expo-google-fonts/inter/500Medium';
+import { Manrope_300Light } from '@expo-google-fonts/manrope/300Light';
 import { Manrope_500Medium } from '@expo-google-fonts/manrope/500Medium';
 
 export const fonts = {
@@ -17,12 +18,14 @@ export const fonts = {
   ui: 'Inter_500Medium',
   /** Small wide-spaced capital labels, as on the welcome page. */
   hud: 'Manrope_500Medium',
+  /** The lighter cut, for quiet meta lines (the welcome page's status and nav). */
+  hudLight: 'Manrope_300Light',
 } as const;
 
-const FILES = { Fraunces_300Light, Fraunces_300Light_Italic, Fraunces_400Regular, Inter_400Regular, Inter_500Medium, Manrope_500Medium };
+const FILES = { Fraunces_300Light, Fraunces_300Light_Italic, Fraunces_400Regular, Inter_400Regular, Inter_500Medium, Manrope_300Light, Manrope_500Medium };
 
 /**
- * Loads the six font files. `ready` is true as soon as they are cached (instant after the first run).
+ * Loads the seven font files. `ready` is true as soon as they are cached (instant after the first run).
  * A load failure also reads as ready, so text never stays invisible on a broken device.
  */
 export function useAppFonts(): { ready: boolean } {
