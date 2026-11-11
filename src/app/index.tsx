@@ -16,7 +16,7 @@ import { Onboarding } from '../components/Onboarding';
 import { textureName } from '../components/Studio';
 import * as player from '../lib/player';
 import { loadActivity, summarize, track } from '../lib/activity';
-import { Button, Caption, Columns, Fade, Greeting, Inert, Ionicons, Label, muteHaptics, Press, Screen, Segmented, Status, useMaterial, useTablet, useWide, type IconName } from '../lib/ui';
+import { Button, Caption, Columns, Fade, Greeting, Ionicons, Label, muteHaptics, Press, Screen, Segmented, Status, useMaterial, useTablet, useWide, type IconName } from '../lib/ui';
 import { colors, radius, sceneFor, tabBarStyle, z, type Depth } from '../lib/theme';
 import { ease, timing } from '../lib/motion';
 import { useWelcomeRedirect } from '../lib/welcome';
@@ -24,7 +24,6 @@ import { Lamp, useLampRing, type LampAnchor, type ViewRef } from '../components/
 import { figureFor } from '../lib/cymatics';
 import { Cymatics } from '../components/Cymatics';
 import { CHECK_IN_HEIGHT, CheckIn } from '../components/room/CheckIn';
-import { WorseBar, WORSE_BAR_PAD } from '../components/room/WorseBar';
 import { DimVeil } from '../components/room/DimVeil';
 import { DarkScreen } from '../components/room/DarkScreen';
 
@@ -279,19 +278,14 @@ export default function QuietRoom() {
 
   const overlay = (
     <>
-      {wide ? null : (
-        <Inert when={covered} pointerEvents="box-none" style={styles.worseLayer}>
-          <WorseBar show={playingNow} onPress={worse} />
-        </Inert>
-      )}
       {wide ? null : checkIn}
-      <DimVeil show={dimmed} onWake={armDim} ring={ring} anchor={anchor} lampSize={lampSize} caption={lampCaption} worseBar={!wide} />
+      <DimVeil show={dimmed} onWake={armDim} ring={ring} anchor={anchor} lampSize={lampSize} caption={lampCaption} worseBar={false} />
       <DarkScreen show={dark} onLeave={leaveDark} ring={ring} anchor={anchor} lampSize={lampSize} />
       {setup ? <Onboarding profile={profile} onChange={p => { setProfile(p); saveProfile(p); }} onSaved={() => saveOnboarded(true)} onDone={finishSetup} /> : null}
     </>
   );
-  // Phone: room to scroll everything clear of the pinned worse bar or the check-in sheet.
-  const bottomPad = wide ? 0 : playingNow ? WORSE_BAR_PAD : checkInUp ? checkInH + 12 : 0;
+  // Phone: room to scroll everything clear of the check-in sheet.
+  const bottomPad = wide ? 0 : checkInUp ? checkInH + 12 : 0;
 
   return (
     // Capture, never claim: every touch start in the room re-arms the auto-dim and then goes on as usual.
@@ -315,10 +309,19 @@ export default function QuietRoom() {
               {header}
               {lamp}
               {statusLine}
-              {loudness}
+              {/* While sound plays, "This is making it worse" takes the loudness controls' place (their space is
+                  kept): right under the lamp, in the flow, so it is visible without scrolling on the smallest
+                  phones and can never cover Dark screen or Softer. */}
+              <View>
+                {loudness}
+                {playingNow ? (
+                  <View style={styles.worseSlot}>
+                    <Button kind="rose" label="This is making it worse" icon="hand-left-outline" onPress={worse} haptic="always" hint="Stops the sound and makes the next one start quieter" />
+                  </View>
+                ) : null}
+              </View>
               {escapes}
-              {/* While sound plays the pinned worse bar sits here: the disclaimer fades out but keeps its space. */}
-              <Hold show={!playingNow}>{disclaimer}</Hold>
+              {disclaimer}
             </>
           )}
         </View>
@@ -370,12 +373,12 @@ function TimerPill({ short, label, onPress }: { short: string; label: string; on
 
 const styles = StyleSheet.create({
   room: { flex: 1 },
-  worseLayer: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, zIndex: z.worseBar },
   column: { gap: 18 },
   header: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   pill: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 14, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.hairline, backgroundColor: colors.smoke },
   pillRow: { alignItems: 'flex-start' },
   loudness: { gap: 10 },
   escapes: { flexDirection: 'row', gap: 12 },
+  worseSlot: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, justifyContent: 'center' },
   escape: { flex: 1, minWidth: 0 },
 });

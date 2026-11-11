@@ -55,14 +55,25 @@ vec4 ocean(vec4 s, float t) {
 }
 
 vec4 fan(vec4 s, float t) {
-  // Three soft swept blades turning slowly round a hub: a fan, not a disc of noise.
-  float rot = t * mix(0.03, 0.12, uMotion);
-  float blade = floor(s.z * 3.0);
-  float r = (0.08 + 0.92 * sqrt(s.y)) * 0.56 * mix(0.85, 1.1, uSpace);
-  float spread = (s.x - 0.5) * mix(0.9, 0.45, r / 0.6);
-  float ang = blade * 2.0943951 + r * 2.4 + spread + rot;
-  float a = fall(0.5, 0.64, r) * (1.0 - 0.55 * abs(s.x - 0.5) * 2.0);
-  return vec4(cos(ang) * r, sin(ang) * r, (fract(s.z * 3.0) - 0.5) * 0.25, a);
+  // Five slim curved blades turning slowly round a small hub, inside a faint ring: a fan you can read.
+  // Each blade is bright on its leading edge and fades behind it, like a soft motion blur.
+  float rot = t * mix(0.04, 0.14, uMotion);
+  float R = 0.46 * mix(0.85, 1.1, uSpace);           // fits the screen, ring included
+  if (s.w > 0.86) {                                   // the ring
+    float ang = s.x * 6.2831853 + rot * 0.15;
+    float r = R * (1.04 + (s.y - 0.5) * 0.025);
+    return vec4(cos(ang) * r, sin(ang) * r, (s.z - 0.5) * 0.05, 0.75);
+  }
+  if (s.w < 0.05) {                                   // the hub
+    float ang = s.x * 6.2831853, r = 0.055 * R * sqrt(s.y);
+    return vec4(cos(ang) * r, sin(ang) * r, 0.0, 0.9);
+  }
+  float blade = floor(s.z * 5.0);
+  float r = (0.1 + 0.9 * sqrt(s.y)) * R;
+  float sweep = mix(0.06, 0.2, r / R);                // narrow, a little wider towards the tip
+  float ang = blade * 1.2566371 + (r / R) * 1.9 - s.x * sweep + rot;
+  float a = min(1.0, 1.35 * fall(0.92, 1.0, r / R) * pow(1.0 - s.x, 0.7));
+  return vec4(cos(ang) * r, sin(ang) * r, (fract(s.z * 5.0) - 0.5) * 0.2, a);
 }
 
 vec4 hush(vec4 s, float t) {
@@ -205,12 +216,12 @@ function formJS(i: number, s: V4, t: number, P: FieldParams): V4 {
     return [x, y, (b / 6 - 0.5) * 0.9, fall(0.75, 1, Math.abs(x) / (0.95 * W))];
   }
   if (i === 2) {
-    const rot = t * mix(0.03, 0.12, P.motion);
-    const blade = Math.floor(s[2] * 3);
-    const r = (0.08 + 0.92 * Math.sqrt(s[1])) * 0.56 * mix(0.85, 1.1, P.space);
-    const ang = blade * 2.0943951 + r * 2.4 + (s[0] - 0.5) * mix(0.9, 0.45, r / 0.6) + rot;
-    const a = fall(0.5, 0.64, r) * (1 - 0.55 * Math.abs(s[0] - 0.5) * 2);
-    return [Math.cos(ang) * r, Math.sin(ang) * r, (fract(s[2] * 3) - 0.5) * 0.25, a];
+    const rot = t * mix(0.04, 0.14, P.motion), R = 0.46 * mix(0.85, 1.1, P.space);
+    if (s[3] > 0.86) { const ang = s[0] * TAU + rot * 0.15, r = R * (1.04 + (s[1] - 0.5) * 0.025); return [Math.cos(ang) * r, Math.sin(ang) * r, (s[2] - 0.5) * 0.05, 0.75]; }
+    if (s[3] < 0.05) { const ang = s[0] * TAU, r = 0.055 * R * Math.sqrt(s[1]); return [Math.cos(ang) * r, Math.sin(ang) * r, 0, 0.9]; }
+    const blade = Math.floor(s[2] * 5), r = (0.1 + 0.9 * Math.sqrt(s[1])) * R;
+    const ang = blade * 1.2566371 + (r / R) * 1.9 - s[0] * mix(0.06, 0.2, r / R) + rot;
+    return [Math.cos(ang) * r, Math.sin(ang) * r, (fract(s[2] * 5) - 0.5) * 0.2, Math.min(1, 1.35 * fall(0.92, 1, r / R) * Math.pow(1 - s[0], 0.7))];
   }
   if (s[3] < 0.72) {
     const th = s[0] * TAU, ph = Math.acos(2 * s[1] - 1), R = 0.3 * (1 + 0.012 * Math.sin(t * 0.5));

@@ -529,7 +529,7 @@ export function Screen({ children, scrollRef, overlay, center, texture, depth = 
   // Phones keep clear of the floating tab bar (64 + 12 inset) and the home indicator.
   // Phone-width browsers get a small "Still" at the top: the way back to the welcome page (desktop has the sidebar's).
   const brand = Platform.OS === 'web' && !wide;
-  const paddingTop = wide ? 48 : brand ? 60 : 20;
+  const paddingTop = wide ? 48 : 20;
   const basePad = wide ? 72 : 96 + insets.bottom;
   // With extra padding the content keeps the height it had without it, so centring does not move it.
   const hold = bottomPad > 0 && viewH > 0 ? { minHeight: viewH - paddingTop - basePad } : null;
@@ -543,15 +543,16 @@ export function Screen({ children, scrollRef, overlay, center, texture, depth = 
         <SafeAreaView style={styles.grow} edges={['top']}>
           <ScrollView ref={scrollRef} scrollEnabled={!locked} keyboardShouldPersistTaps="handled" onLayout={e => setViewH(e.nativeEvent.layout.height)}
             contentContainerStyle={[styles.screen, column, { paddingHorizontal: gutter, paddingTop, paddingBottom: basePad + bottomPad }, contentStyle]}>
+            {/* Phone-width web: a small "Still" at the top that scrolls with the page, the way back to the welcome page. */}
+            {brand ? (
+              <Press accessibilityRole="button" accessibilityLabel="Still: open the welcome page" onPress={() => router.navigate('/welcome')}
+                style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: -12, marginBottom: 4 }}>
+                <Mark size={22} />
+                <Text style={{ color: colors.ink2, fontFamily: fonts.ui, fontSize: 12.5, letterSpacing: 4, textTransform: 'uppercase' }}>Still</Text>
+              </Press>
+            ) : null}
             <Animated.View style={[styles.content, center && styles.centered, hold, fader]}>{children}</Animated.View>
           </ScrollView>
-          {brand ? (
-            <Press accessibilityRole="button" accessibilityLabel="Still: open the welcome page" onPress={() => router.navigate('/welcome')}
-              style={{ position: 'absolute', top: 8, left: gutter, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Mark size={22} />
-              <Text style={{ color: colors.ink2, fontFamily: fonts.ui, fontSize: 12.5, letterSpacing: 4, textTransform: 'uppercase' }}>Still</Text>
-            </Press>
-          ) : null}
         </SafeAreaView>
       </Inert>
       {overlay}

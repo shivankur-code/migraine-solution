@@ -82,9 +82,9 @@
   padding-right: max(var(--gutter), env(safe-area-inset-right));
 }
 .lp-col { max-width: var(--col); }
-.lp-section { padding: 72px 0; scroll-margin-top: calc(var(--mast) + 8px); }
-@media (min-width: 768px) { .lp-section { padding: 96px 0; } }
-@media (min-width: 960px) { .lp-section { padding: 112px 0; } }
+.lp-section { padding: 40px 0; scroll-margin-top: calc(var(--mast) + 8px); }
+@media (min-width: 768px) { .lp-section { padding: 52px 0; } }
+@media (min-width: 960px) { .lp-section { padding: 60px 0; } }
 .lp-stack { display: grid; gap: 16px; }
 .lp-stack > p + p { margin-top: -4px; }
 
