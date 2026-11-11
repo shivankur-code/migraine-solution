@@ -191,7 +191,7 @@ export function Instrument({ onEnter, onHow, reduced, ctaHref }: {
         <p className="hero-eyebrow">For migraine days <span className="hero-eyebrow-dot" aria-hidden>·</span> Tuned with AI</p>
         <h1 id="hero-title" className="hero-h1">A quiet room, with one soft sound in it.</h1>
         <YourNoise reduced={reduced} ready={fontsReady} />
-        <p className="hero-lead">Still shapes a gentle sound to your own ears, guided by research on migraine and hearing and fine-tuned with AI. It starts in silence and stays private.</p>
+        <p className="hero-lead">Still shapes <em className="hero-yours">your</em> gentle sound, guided by research and fine-tuned with AI.</p>
         <div className="hero-actions">
           <a href={ctaHref} className="hero-btn hero-btn-primary" onClick={enter}>Open the quiet room</a>
           <button type="button" className={`hero-btn hero-btn-ghost${listening ? ' is-on' : ''}`} onClick={toggleListen} aria-pressed={listening}>

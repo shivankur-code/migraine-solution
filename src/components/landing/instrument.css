@@ -77,6 +77,7 @@
 }
 
 /* "It's white noise." -> "It's your noise.": the middle word is struck through, then replaced. */
+.hero-yours { font-style: normal; color: var(--lamp); }
 .hero-eyebrow-dot { margin: 0 0.4em; color: var(--lamp-deep); }
 .hero-noise {
   margin: -4px 0 0; font-family: var(--font-display-italic, 'Fraunces_300Light_Italic'), serif; font-weight: 300;
