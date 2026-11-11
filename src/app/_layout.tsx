@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router/js-tabs';
 import { StatusBar } from 'expo-status-bar';
-import { AppState, Easing, View } from 'react-native';
+import { AppState, Easing, StyleSheet, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useEffect } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -41,12 +42,14 @@ export default function Layout() {
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.night }}>
       <StatusBar style="light" />
+      {/* Desktop: the same soft gradient runs behind the sidebar, so the window reads as one surface. */}
+      {wide ? <LinearGradient pointerEvents="none" colors={[colors.lift.hush, colors.scene.hush.sky[1], colors.night]} locations={[0, 0.45, 1]} style={StyleSheet.absoluteFill} /> : null}
       <Tabs
         tabBar={props => (wide ? <Sidebar {...props} /> : <TabBar {...props} />)}
         screenOptions={{
           ...(wide ? { tabBarPosition: 'left' as const } : {}),
           headerShown: false,
-          sceneStyle: { backgroundColor: colors.night },
+          sceneStyle: { backgroundColor: wide ? 'transparent' : colors.night },
           animation: 'fade',
           transitionSpec: crossFade,
         }}

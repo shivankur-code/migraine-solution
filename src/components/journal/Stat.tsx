@@ -1,29 +1,33 @@
-// One journal number in a smoke tile: a 44 pt tabular Numeral over a Caption. Nothing to show reads
-// as an em dash rather than a zero, so an empty journal looks quiet instead of like a failing score.
+// One journal number: a light Fraunces numeral under a small capital label, set in a row of three inside
+// one glass panel (hairlines between them). With nothing to show yet it says so in words, quietly,
+// instead of a dash that looks broken.
 import { StyleSheet, View } from 'react-native';
-import { Caption, Numeral, styles as ui } from '../../lib/ui';
+import { colors } from '../../lib/theme';
+import { Body, Eyebrow, Numeral } from '../../lib/ui';
 
 export type StatProps = {
-  /** The number. `null` / `undefined` is "nothing yet" and draws an em dash. */
+  /** The number or word. `null` / `undefined` is "nothing yet". */
   value: number | string | null | undefined;
-  /** What the number counts, e.g. "hard days with Still". */
+  /** What it counts, e.g. "Days with Still". */
   label: string;
+  /** Draw a hairline on the left (every stat after the first). */
+  divided?: boolean;
 };
 
-const EMPTY = '—';
-
-export function Stat({ value, label }: StatProps) {
+export function Stat({ value, label, divided }: StatProps) {
   const empty = value === null || value === undefined || value === '';
-  const text = empty ? EMPTY : String(value);
+  const text = empty ? 'Not yet' : String(value);
   return (
-    <View style={[ui.card, styles.tile]} accessible accessibilityRole="text" accessibilityLabel={empty ? `${label}: nothing yet` : `${text} ${label}`}>
-      <Numeral>{text}</Numeral>
-      <Caption>{label}</Caption>
+    <View style={[styles.stat, divided && styles.divided]} accessible accessibilityRole="text" accessibilityLabel={`${label}: ${empty ? 'nothing yet' : text}`}>
+      <Eyebrow numberOfLines={2}>{label}</Eyebrow>
+      {empty ? <Body color={colors.ink3} style={styles.empty}>{text}</Body> : <Numeral numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{text}</Numeral>}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // Two to a row on phones; the row wraps to one per line under large type.
-  tile: { flexBasis: '47%', flexGrow: 1, minWidth: 140, gap: 4 },
+  stat: { flex: 1, minWidth: 0, gap: 6 },
+  divided: { borderLeftWidth: 1, borderLeftColor: 'rgba(255,255,255,0.09)', paddingLeft: 14 },
+  // Sits on the numeral's baseline so the row lines up whether a stat has a number or not.
+  empty: { minHeight: 42, textAlignVertical: 'bottom', paddingTop: 14 },
 });

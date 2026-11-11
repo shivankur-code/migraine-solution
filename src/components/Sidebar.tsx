@@ -1,4 +1,4 @@
-// Desktop-web navigation: a 268 pt translucent sidebar in place of the phone's floating tab bar. Only
+// Desktop-web navigation: a 252 pt floating glass sidebar in place of the phone's floating tab bar. Only
 // rendered in a wide browser window (see _layout.tsx); phones and tablets never use it.
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -96,9 +96,10 @@ export function Sidebar({ state, descriptors, emitter, navigateToTab }: BottomTa
 }
 
 const styles = StyleSheet.create({
+  // A floating glass panel, inset from the window's edges, like the phone's floating tab bar.
   side: {
-    width: 268, paddingHorizontal: 22, paddingTop: space.xxl, paddingBottom: 28, justifyContent: 'space-between',
-    borderRightWidth: 1, borderRightColor: colors.hairline, overflow: 'hidden',
+    width: 252, margin: 16, marginRight: 0, paddingHorizontal: 14, paddingTop: 28, paddingBottom: 22, justifyContent: 'space-between',
+    borderWidth: 1, borderColor: colors.glassEdge, borderTopColor: colors.glassLit, borderRadius: radius.card, overflow: 'hidden',
   },
   top: { gap: space.xxl },
   brand: { gap: space.s, paddingHorizontal: 10 },
@@ -106,8 +107,8 @@ const styles = StyleSheet.create({
   // Title 30: the desktop Title size, pinned so the brand never shrinks with the window.
   still: { fontSize: 30, lineHeight: 36 },
   rows: { gap: space.xs },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 52, paddingVertical: 8, paddingHorizontal: 12, borderRadius: radius.chip },
-  rowOn: { backgroundColor: colors.lampGlow },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 52, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 14 },
+  rowOn: { backgroundColor: 'rgba(255,255,255,0.07)' },
   rowText: { flex: 1, minWidth: 0 },
   foot: { gap: space.s, paddingHorizontal: 10 },
   links: { flexDirection: 'row', gap: space.l, marginTop: space.xs },

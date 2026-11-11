@@ -150,7 +150,7 @@ function FadePill({ on }: { on: boolean }) {
 const styles = StyleSheet.create({
   dock: { position: 'absolute', zIndex: z.tabBar, alignItems: 'center' },
   bar: {
-    width: '100%', maxWidth: MAX_WIDTH, minHeight: BAR_HEIGHT, borderRadius: radius.card, overflow: 'hidden',
+    width: '100%', maxWidth: MAX_WIDTH, minHeight: BAR_HEIGHT, borderRadius: radius.pill, overflow: 'hidden',
     borderWidth: 1, borderColor: colors.hairline, borderTopColor: colors.hairlineLit,
   },
   solid: { backgroundColor: colors.solid, opacity: 0.96 },
