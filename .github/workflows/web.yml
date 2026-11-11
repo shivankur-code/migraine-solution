@@ -27,7 +27,7 @@ env:
 
 jobs:
   web:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # pinned: the newer ubuntu-latest image could not reach its apt mirrors to install the browser
     permissions:
       id-token: write
       contents: write   # publishes PR screenshots to the web-test-results branch
