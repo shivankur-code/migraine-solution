@@ -379,6 +379,6 @@ const styles = StyleSheet.create({
   pillRow: { alignItems: 'flex-start' },
   loudness: { gap: 10 },
   escapes: { flexDirection: 'row', gap: 12 },
-  worseSlot: { ...StyleSheet.absoluteFillObject, justifyContent: 'center' },
+  worseSlot: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, justifyContent: 'center' },
   escape: { flex: 1, minWidth: 0 },
 });
