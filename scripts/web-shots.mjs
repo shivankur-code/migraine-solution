@@ -13,8 +13,15 @@ const problems = [];
 
 // Visible controls and text that overlap each other on the current screen. An element counts only if
 // some of it is actually on top (sampled with elementFromPoint), so things covered on purpose are skipped.
-async function overlaps(page) {
-  return page.evaluate(() => {
+// The floating tab bar and bottom sheets sit over the page by design and the page scrolls under them, so:
+// mode 'rest' ignores page items passing under a floating layer (but not two page items overlapping);
+// mode 'end' (scrolled to the bottom) reports only page items still stuck under a floating layer.
+async function overlaps(page, mode = 'rest') {
+  return page.evaluate(mode => {
+    // Only the tab bar and bottom sheets (with their scrim) float over the page by design. Anything else
+    // pinned over the page (like the old worse bar) is checked like ordinary content.
+    const floating = el => !!el.closest('[role="tablist"], [role="dialog"]')
+      || (el.getAttribute('aria-label') === 'Close' && !!el.parentElement?.querySelector('[role="dialog"]'));
     const CONTROL = 'button, a[href], input, [role="button"], [role="tab"], [role="radio"], [role="slider"], [role="link"], [role="switch"], [role="checkbox"]';
     const shown = el => {
       if (el.checkVisibility && !el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) return false;
@@ -51,6 +58,8 @@ async function overlaps(page) {
         for (let j = list1 === list2 ? i + 1 : 0; j < list2.length; j++) {
           const a = list1[i], b = list2[j];
           if (a === b || a.contains(b) || b.contains(a)) continue;
+          const mixed = floating(a) !== floating(b);
+          if (mode === 'rest' ? mixed : !mixed) continue;
           const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
           if (area(ra, rb) > 40) out.push(`${kind}: "${label(a)}" overlaps "${label(b)}"`);
         }
@@ -59,7 +68,7 @@ async function overlaps(page) {
     check(controls, controls, 'controls');
     check(controls, texts, 'control over text');
     return [...new Set(out)];
-  });
+  }, mode);
 }
 
 async function run(name, viewport, { quick = false } = {}) {
@@ -73,6 +82,16 @@ async function run(name, viewport, { quick = false } = {}) {
     await page.waitForTimeout(wait);
     await page.screenshot({ path: `${out}/${name}-${label}.png` });
     for (const o of await overlaps(page)) problems.push(`${name} ${label}: ${o}`);
+    // Phones: scroll to the bottom and check nothing is left stuck under the tab bar or a sheet.
+    if (viewport.width < 960) {
+      const { width, height } = page.viewportSize();
+      await page.mouse.move(width / 2, height * 0.4);
+      await page.mouse.wheel(0, 4000);
+      await page.waitForTimeout(500);
+      for (const o of await overlaps(page, 'end')) problems.push(`${name} ${label} (scrolled to the end): ${o}`);
+      await page.mouse.wheel(0, -4000);
+      await page.waitForTimeout(300);
+    }
   };
   await page.goto(base, { waitUntil: 'networkidle' });
   // First web visit lands on the welcome page: photograph it, then mark it seen and open the app.
@@ -120,6 +139,7 @@ async function run(name, viewport, { quick = false } = {}) {
   await shot('05-playing', 6000);
   // Phones: the room may scroll; check the lower half of it while playing too.
   if (viewport.width < 960) {
+    await page.mouse.move(viewport.width / 2, viewport.height * 0.4);
     await page.mouse.wheel(0, 600);
     await shot('05b-playing-scrolled', 800);
     await page.mouse.wheel(0, -600);
