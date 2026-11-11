@@ -10,7 +10,7 @@ import { figureFor, type Figure } from '../lib/cymatics';
 import { Cymatics } from '../components/Cymatics';
 import { textureName } from '../components/Studio';
 import { clearActivity, loadActivity, summarize } from '../lib/activity';
-import { Body, Button, Card, Caption, Chip, Columns, confirmAction, Eyebrow, Heading, Screen, Status, Title, useWide } from '../lib/ui';
+import { Body, Button, Card, Caption, Chip, Columns, confirmAction, Eyebrow, Heading, Kicker, Screen, Status, Title, useWide } from '../lib/ui';
 import { colors } from '../lib/theme';
 import { Stat } from '../components/journal/Stat';
 import { Bars } from '../components/journal/Bars';
@@ -79,6 +79,7 @@ export default function JournalScreen() {
       <Columns rightWidth={400} gap={24} left={<>
         <View style={styles.hero}>
           <View style={styles.heroText}>
+            <Kicker>Journal</Kicker>
             <Title>Your journal</Title>
             <Body color={colors.ink2}>{empty ? 'Still notes each time you use it. It stays on this device.' : `${days} · only on this device`}</Body>
           </View>

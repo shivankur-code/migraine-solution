@@ -16,7 +16,7 @@ import { Onboarding } from '../components/Onboarding';
 import { textureName } from '../components/Studio';
 import * as player from '../lib/player';
 import { loadActivity, summarize, track } from '../lib/activity';
-import { Button, Caption, Columns, Fade, Greeting, Ionicons, Label, muteHaptics, Press, Screen, Segmented, Status, useMaterial, useTablet, useWide, type IconName } from '../lib/ui';
+import { Button, Caption, Columns, Fade, Greeting, Ionicons, Kicker, Label, Meta, muteHaptics, Press, Screen, Segmented, Status, useMaterial, useTablet, useWide, type IconName } from '../lib/ui';
 import { colors, radius, sceneFor, tabBarStyle, z, type Depth } from '../lib/theme';
 import { ease, timing } from '../lib/motion';
 import { useWelcomeRedirect } from '../lib/welcome';
@@ -241,7 +241,10 @@ export default function QuietRoom() {
 
   const header = (
     <View style={styles.header}>
-      <Greeting>Rest here.</Greeting>
+      <View style={styles.titleBlock}>
+        <Kicker>Quiet room</Kicker>
+        <Greeting>Rest here.</Greeting>
+      </View>
       {wide ? null : (
         <Hold show={!playingNow}>
           <TimerPill short={timerShort} label={timerLabel} onPress={cycleTimer} />
@@ -366,7 +369,7 @@ function TimerPill({ short, label, onPress }: { short: string; label: string; on
   return (
     <Press haptic="tick" accessibilityRole="button" accessibilityLabel={`${label}. Change`} onPress={onPress} style={[styles.pill, material.fill]}>
       <Ionicons name="timer-outline" size={16} color={colors.ink2} />
-      <Animated.View style={animated}><Label>{shown}</Label></Animated.View>
+      <Animated.View style={animated}><Meta>{shown}</Meta></Animated.View>
     </Press>
   );
 }
@@ -374,6 +377,7 @@ function TimerPill({ short, label, onPress }: { short: string; label: string; on
 const styles = StyleSheet.create({
   room: { flex: 1 },
   column: { gap: 18 },
+  titleBlock: { gap: 4 },
   header: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   pill: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 14, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.glassEdge, borderTopColor: colors.glassLit, backgroundColor: colors.glassFill },
   pillRow: { alignItems: 'flex-start' },

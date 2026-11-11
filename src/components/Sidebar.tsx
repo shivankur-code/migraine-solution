@@ -1,13 +1,13 @@
 // Desktop-web navigation: a 252 pt floating glass sidebar in place of the phone's floating tab bar. Only
 // rendered in a wide browser window (see _layout.tsx); phones and tablets never use it.
 import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Link, router } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { colors, radius, space } from '../lib/theme';
+import { colors, fonts, radius, space } from '../lib/theme';
 import { lum, timing } from '../lib/motion';
-import { Caption, Control, Ionicons, Label, Press, Title, useRovingFocus, type IconName } from '../lib/ui';
+import { Caption, Control, Ionicons, Label, Meta, Press, styles as ui, useRovingFocus, type IconName } from '../lib/ui';
 import { Mark } from './Mark';
 import { PrivacySheet } from './PrivacySheet';
 import { chromeHidden, Material, NAV_ROUTES, webData } from './TabBar';
@@ -42,10 +42,10 @@ export function Sidebar({ state, descriptors, emitter, navigateToTab }: BottomTa
         <View style={styles.brand}>
           {/* The name is the way back to the landing page, from every page. */}
           <Press accessibilityRole="button" accessibilityLabel="Still: open the welcome page" onPress={() => router.navigate('/welcome')} style={styles.wordmark}>
-            <Mark size={28} />
-            <Title style={styles.still} accessibilityRole="none">Still</Title>
+            <Mark size={24} />
+            <Text style={styles.still}>Still</Text>
           </Press>
-          <Label>Sound for migraine days</Label>
+          <Meta>For migraine days</Meta>
         </View>
         <View accessibilityRole="tablist" style={styles.rows}>
           {routes.map((route, i) => {
@@ -66,7 +66,7 @@ export function Sidebar({ state, descriptors, emitter, navigateToTab }: BottomTa
               >
                 <Ionicons name={on ? filled(icon) : icon} size={20} color={on ? colors.lamp : colors.ink2} />
                 <View style={styles.rowText}>
-                  <Control color={on ? colors.ink : colors.ink2}>{label}</Control>
+                  <Control color={on ? colors.ink : colors.ink2} style={ui.nav}>{label}</Control>
                   {SUB[route.name] ? <Caption>{SUB[route.name]}</Caption> : null}
                 </View>
               </Press>
@@ -80,12 +80,12 @@ export function Sidebar({ state, descriptors, emitter, navigateToTab }: BottomTa
         <View style={styles.links}>
           {/* Opens a dialog, so it is a button; react-native-web only activates role="link" on a real anchor. */}
           <Press accessibilityLabel="Privacy" accessibilityHint="Opens the privacy policy" haptic={false} focusable={!hidden} onPress={() => setPrivacy(true)} style={styles.link} {...webData({ hover: 'link' })}>
-            <Label style={styles.underline}>Privacy</Label>
+            <Meta>Privacy</Meta>
           </Press>
           {/* A real anchor on web (href, open in a new tab), routed in place by expo-router. */}
           <Link href="/welcome" asChild>
             <Press accessibilityRole="link" accessibilityLabel="About Still" haptic={false} focusable={!hidden} style={styles.link} {...webData({ hover: 'link' })}>
-              <Label style={styles.underline}>About Still</Label>
+              <Meta>About Still</Meta>
             </Press>
           </Link>
         </View>
@@ -104,12 +104,12 @@ const styles = StyleSheet.create({
   top: { gap: space.xxl },
   brand: { gap: space.s, paddingHorizontal: 10 },
   wordmark: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  // Title 30: the desktop Title size, pinned so the brand never shrinks with the window.
-  still: { fontSize: 30, lineHeight: 36 },
+  // The welcome page's brand: Manrope capitals, widely spaced.
+  still: { fontFamily: fonts.hud, fontSize: 14, lineHeight: 20, letterSpacing: 7.7, textTransform: 'uppercase', color: colors.ink },
   rows: { gap: space.xs },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 52, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 14 },
   rowOn: { backgroundColor: 'rgba(255,255,255,0.07)' },
-  rowText: { flex: 1, minWidth: 0 },
+  rowText: { flex: 1, minWidth: 0, gap: 3 },
   foot: { gap: space.s, paddingHorizontal: 10 },
   links: { flexDirection: 'row', gap: space.l, marginTop: space.xs },
   link: { minHeight: 44, justifyContent: 'center' },

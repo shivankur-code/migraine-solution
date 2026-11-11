@@ -48,6 +48,7 @@ export default function MySound() {
   const mixer = (
     <>
       <View style={s.header}>
+        <Kicker>My sound</Kicker>
         <Title accessibilityRole="header">Your sound</Title>
         <Body color={colors.ink2}>Turn the dials and watch your sound take shape. Changes save by themselves.</Body>
       </View>
