@@ -132,7 +132,8 @@ export function FindSound({ profile, onFound, onStart, header, saveLabel, onSave
 
   const shownIndex = phase === 'found' && chosen ? chosen.i : index;
   const figure = figureFor(recipeAt(shownIndex));
-  const progress = phase === 'found' ? (shownIndex + 1) / N : phase === 'drifting' ? (index + frac) / N : 0;
+  // The arc meets each dot as its setting begins and travels to the next one while it plays.
+  const progress = phase === 'found' ? shownIndex / (N - 1) : phase === 'drifting' ? Math.min(1, (index + frac) / (N - 1)) : 0;
   const live = phase === 'drifting' || phase === 'found';
 
   const stage = (
