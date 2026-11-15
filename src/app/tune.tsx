@@ -8,7 +8,7 @@ import { loadProfile, saveOnboarded, saveProfile } from '../lib/storage';
 import * as player from '../lib/player';
 import { Tests } from '../components/build/Tests';
 import { PreviewButton, ProfileDial, TextureTiles, usePreview } from '../components/Studio';
-import { FindSound } from '../components/FindSound';
+import { driftStop, FindSound } from '../components/FindSound';
 import { AiReviewCard } from '../components/AiReviewCard';
 import { SupportCard } from '../components/SupportCard';
 import { AccountCard, SharingCard } from '../components/AccountCard';
@@ -73,10 +73,10 @@ export default function MySound() {
                 <Eyebrow>{drifting ? 'Turning by itself' : 'Or by hand'}</Eyebrow>
                 <View style={s.dials}>
                   {DIAL_KEYS.map(k => (
-                    // While it drifts, Tone follows the sound and the others rest; afterwards all four are yours.
-                    <View key={k} style={[s.dial, drifting && k !== 'tone' && s.resting]} pointerEvents={drifting ? 'none' : 'auto'}>
+                    // While it drifts, all four turn together with the sound; afterwards they are yours.
+                    <View key={k} style={s.dial} pointerEvents={drifting ? 'none' : 'auto'}>
                       <ProfileDial which={k} profile={profile} onChange={dialed} size={tablet ? 104 : 92}
-                        disabled={k === 'hum' && hatesHum} follow={k === 'tone' && phase === 'drifting' ? driftAt : undefined} />
+                        disabled={k === 'hum' && hatesHum} follow={phase === 'drifting' ? driftStop(profile, k, driftAt) : undefined} />
                     </View>
                   ))}
                 </View>
@@ -120,7 +120,6 @@ const s = StyleSheet.create({
   find: { paddingVertical: 24 },
   findHead: { gap: 4, alignItems: 'center' },
   byHand: { gap: 10, alignItems: 'center', borderTopWidth: 1, borderTopColor: colors.glassEdge, paddingTop: 18 },
-  resting: { opacity: 0.45 },
   dial: { flexBasis: '45%', alignItems: 'center' },
   // The two rows share one glass panel; the last row's hairline is hidden by the panel's own edge.
   rows: { paddingVertical: 4, paddingHorizontal: 14, gap: 0 },
