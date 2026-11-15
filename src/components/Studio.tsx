@@ -114,14 +114,17 @@ export function TextureTiles({ value, onPick }: { value: Texture | undefined; on
 /** A big tappable choice (square, or a wide row). The shared primitive; kept under this name for older imports. */
 export { Tile };
 
-/** One dial bound to the profile. */
-export function ProfileDial({ which, profile, onChange, size, disabled }: { which: DialSpec['key']; profile: Profile; onChange: (p: Profile) => void; size?: number; disabled?: boolean }) {
+/**
+ * One dial bound to the profile. `follow` turns it from outside (the Find-by-ear drift moves the Tone
+ * dial in step with the sound); while it follows, hands are off but it keeps its full colour.
+ */
+export function ProfileDial({ which, profile, onChange, size, disabled, follow }: { which: DialSpec['key']; profile: Profile; onChange: (p: Profile) => void; size?: number; disabled?: boolean; follow?: number }) {
   const spec = DIALS[which];
   const saved = spec.index(recipeFor(profile, 'normal').recipe);
   const [shown, setShown] = useState(saved);
   useEffect(() => setShown(saved), [saved]);
   return (
-    <Dial label={spec.label} stops={spec.stops} value={shown} size={size} disabled={disabled}
+    <Dial label={spec.label} stops={spec.stops} value={follow ?? shown} size={size} disabled={disabled}
       onChange={setShown}
       onRelease={i => { track('dial', { dial: which, stop: i }); onChange(withDial(profile, which, i)); }} />
   );

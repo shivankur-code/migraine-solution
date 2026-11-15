@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
+import { useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { recipeFor, type Profile } from '../lib/profile';
 import { figureFor } from '../lib/cymatics';
@@ -27,10 +28,10 @@ const XFADE_S = 2.5;                        // and blends into the next over thi
 const UNTOUCHED = 2;                        // no tap at all: keep "Warm", the gentle middle
 const ARC = 0.75;                           // the ring is a 270° arc, open at the bottom
 
-type Phase = 'ready' | 'preparing' | 'drifting' | 'found';
+export type Phase = 'ready' | 'preparing' | 'drifting' | 'found';
 const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
 
-export function FindSound({ profile, onFound, onStart, header, saveLabel, onSave, size: fixed }: {
+export function FindSound({ profile, onFound, onStart, header, saveLabel, onSave, size: fixed, below, idleFigure, startLabel, extraFoot }: {
   profile: Profile;
   /** Called once a setting is found (tapped, or kept when nobody tapped), with the new profile. */
   onFound: (p: Profile) => void;
@@ -43,6 +44,14 @@ export function FindSound({ profile, onFound, onStart, header, saveLabel, onSave
   onSave?: () => void;
   /** Ring size; by default it fits the screen. */
   size?: number;
+  /** Drawn under the words, told where the drift is (My sound's dials follow it). */
+  below?: (s: { phase: Phase; index: number }) => ReactNode;
+  /** Show the sound's own figure before the drift starts, not loose dust. */
+  idleFigure?: boolean;
+  /** The label of the button that starts the drift. */
+  startLabel?: string;
+  /** Extra actions beside Start and Try again (e.g. Listen). */
+  extraFoot?: ReactNode;
 }) {
   const { width, height } = useWindowDimensions();
   const size = fixed ?? Math.min(width - 48, height < 700 ? 220 : 280, 320);
@@ -127,6 +136,10 @@ export function FindSound({ profile, onFound, onStart, header, saveLabel, onSave
 
   // Leaving the screen ends the drift and its sound.
   useEffect(() => () => { run.current++; player.stop(0.8); }, []);
+  // So does switching tabs (screens stay mounted): an unfinished drift goes back to the start.
+  useFocusEffect(useCallback(() => () => {
+    if (phaseRef.current === 'drifting' || phaseRef.current === 'preparing') { run.current++; setP('ready'); player.stop(0.8); }
+  }, []));
 
   const tapAt = () => settle(Math.max(0, indexRef.current - 1), true);
 
@@ -139,7 +152,7 @@ export function FindSound({ profile, onFound, onStart, header, saveLabel, onSave
   const stage = (
     <View style={styles.stage}>
       <Ring size={size} progress={progress} lit={phase === 'found' ? shownIndex : phase === 'drifting' ? index : -1} chosen={phase === 'found' ? shownIndex : null}>
-        <Cymatics figure={live ? figure : null} size={Math.round(size * 0.66)} live={live} />
+        <Cymatics figure={live || idleFigure ? figure : null} size={Math.round(size * 0.66)} live={live} />
       </Ring>
       <View style={styles.words} accessibilityLiveRegion="polite" aria-live="polite">
         {phase === 'ready' ? (
@@ -166,7 +179,10 @@ export function FindSound({ profile, onFound, onStart, header, saveLabel, onSave
   );
 
   const foot = phase === 'ready' || phase === 'preparing' ? (
-    <Button kind="primary" icon="play" label={phase === 'preparing' ? 'Preparing…' : 'Start'} disabled={phase === 'preparing'} onPress={start} />
+    <>
+      <Button kind="primary" icon="play" label={phase === 'preparing' ? 'Preparing…' : startLabel ?? 'Start'} disabled={phase === 'preparing'} onPress={start} />
+      {phase === 'ready' ? extraFoot : null}
+    </>
   ) : phase === 'drifting' ? (
     // Looks like a button; the whole screen is the target (see below), so a miss still counts.
     <View style={styles.hint} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden>
@@ -176,6 +192,7 @@ export function FindSound({ profile, onFound, onStart, header, saveLabel, onSave
     <>
       {saveLabel && onSave ? <Button kind="primary" label={saveLabel} onPress={onSave} /> : null}
       <Button kind="quiet" icon="refresh-outline" label="Try again" onPress={start} />
+      {extraFoot}
     </>
   );
 
@@ -184,11 +201,11 @@ export function FindSound({ profile, onFound, onStart, header, saveLabel, onSave
     return (
       <Press accessibilityRole="button" accessibilityLabel="That's too much" accessibilityHint="Keeps your sound one step gentler than this"
         haptic={false} scaleTo={1} largeSurface onPress={tapAt} style={[styles.root, fixed ? styles.inline : null]}>
-        {header}{stage}<View style={styles.foot}>{foot}</View>
+        {header}{stage}{below?.({ phase, index: shownIndex })}<View style={styles.foot}>{foot}</View>
       </Press>
     );
   }
-  return <View style={[styles.root, fixed ? styles.inline : null]}>{header}{stage}<View style={styles.foot}>{foot}</View></View>;
+  return <View style={[styles.root, fixed ? styles.inline : null]}>{header}{stage}{below?.({ phase, index: shownIndex })}<View style={styles.foot}>{foot}</View></View>;
 }
 
 /** A 270° lamp ring with one dot per setting; the dots up to the current one are lit. */

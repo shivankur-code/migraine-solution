@@ -164,6 +164,19 @@ async function run(name, viewport, { quick = false } = {}) {
   await tab('tab-sound', 'My sound').click();
   await page.getByText('Your sound', { exact: true }).waitFor();
   await shot('07-my-sound', 3000);
+  if (!quick) {
+    // Find it by ear on My sound: the Tone dial turns along with the drift; then all four are free.
+    const findBtn = page.getByRole('button', { name: 'Find it by ear', exact: true }).locator('visible=true').first();
+    await findBtn.scrollIntoViewIfNeeded();
+    await findBtn.click();
+    await page.getByText('Turning by itself').locator('visible=true').first().waitFor({ timeout: 30000 });
+    await page.getByText('Turning by itself').locator('visible=true').first().scrollIntoViewIfNeeded();
+    await shot('07b-my-sound-finding', 12000);
+    const target = await page.getByLabel("That's too much").locator('visible=true').first().boundingBox();
+    await page.mouse.click(target.x + target.width / 2, target.y + 40);
+    await page.getByText('Or by hand').locator('visible=true').first().waitFor();
+    await shot('07c-my-sound-found', 2500);
+  }
   await tab('tab-journal', 'Journal').click();
   await page.getByText('Your journal', { exact: true }).waitFor();
   await shot('08-journal', 2500);

@@ -1,10 +1,9 @@
-// My sound: listen, pick a texture, and find the sound again with one tap (no dials). The four dials,
-// choosing by ear (A/B) and account settings sit behind one tap each, for good days.
+// My sound: pick a texture, then one instrument: find the sound by ear with one tap while the four dials
+// turn along with it, then nudge them by hand. Choosing by A/B and account settings sit behind one tap each.
 import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
-import { freshProfile, recipeFor, type Profile } from '../lib/profile';
-import { figureFor } from '../lib/cymatics';
+import { freshProfile, type Profile } from '../lib/profile';
 import { loadProfile, saveOnboarded, saveProfile } from '../lib/storage';
 import * as player from '../lib/player';
 import { Tests } from '../components/build/Tests';
@@ -13,7 +12,7 @@ import { FindSound } from '../components/FindSound';
 import { AiReviewCard } from '../components/AiReviewCard';
 import { SupportCard } from '../components/SupportCard';
 import { AccountCard, SharingCard } from '../components/AccountCard';
-import { Body, Button, Caption, Card, Columns, confirmAction, Heading, Kicker, Row, Screen, Title, useTablet, useWide } from '../lib/ui';
+import { Body, Button, Caption, Card, Columns, confirmAction, Eyebrow, Heading, Kicker, Row, Screen, Title, useTablet, useWide } from '../lib/ui';
 import { colors, space } from '../lib/theme';
 import { track } from '../lib/activity';
 
@@ -32,11 +31,11 @@ export default function MySound() {
   }, []));
 
   const update = (next: Profile) => { setProfile(next); saveProfile(next); preview.update(next); };
+  // A dial turned by hand: save it and let it be heard.
+  const dialed = (next: Profile) => { update(next); if (!preview.on) preview.start(next); };
   // Found by ear: save it (the drift is already playing it, so the preview stays out of the way).
   const found = (next: Profile) => { setProfile(next); saveProfile(next); };
   const hatesHum = (profile.intake.dislikes || []).includes('hum');
-  // The cymatic figure of the sound the dials make; it reshapes as each dial is turned.
-  const figure = figureFor(recipeFor(profile, 'warning').recipe);
 
   const startOver = () => confirmAction('Set up your sound again?', 'Your dials and choices go back to the start. Your journal stays.', 'Start over', async () => {
     preview.stop();
@@ -53,10 +52,8 @@ export default function MySound() {
       <View style={s.header}>
         <Kicker>My sound</Kicker>
         <Title accessibilityRole="header">Your sound</Title>
-        <Body color={colors.ink2}>Listen, choose a texture, or find it again by ear. Changes save by themselves.</Body>
+        <Body color={colors.ink2}>Choose a texture, then find your sound by ear. Changes save by themselves.</Body>
       </View>
-
-      <PreviewButton on={preview.on} busy={preview.busy} arc={profile} figure={figure} onPress={() => preview.toggle(profile)} />
 
       <TextureTiles value={profile.intake.texture} onPick={t => {
         const next = { ...profile, intake: { ...profile.intake, texture: t } };
@@ -64,22 +61,28 @@ export default function MySound() {
         if (!preview.on) preview.start(next);
       }} />
 
+      {/* One instrument: find it by ear, and the dials beneath it turn along with the sound. Then nudge them by hand. */}
       <Card style={s.find}>
-        <FindSound profile={profile} onFound={found} onStart={() => preview.stop()} size={tablet ? 220 : 200}
-          header={<View style={s.findHead}><Heading>Find it again, by ear</Heading><Caption>One tap, about 40 seconds. No dials.</Caption></View>} />
-      </Card>
-
-      <Card style={s.rows}>
-        <Row icon="options-outline" label="Fine-tune by hand" sub="Tone, hum, motion and space"
-          expanded={open === 'dials' || wide} onPress={() => toggle('dials')}>
-          <View style={s.dials}>
-            {DIAL_KEYS.map(k => (
-              <View key={k} style={s.dial}>
-                <ProfileDial which={k} profile={profile} onChange={update} size={tablet ? 110 : 100} disabled={k === 'hum' && hatesHum} />
+        <FindSound profile={profile} onFound={found} onStart={() => preview.stop()} size={tablet ? 220 : 200} idleFigure startLabel="Find it by ear"
+          header={<View style={s.findHead}><Heading>Find it by ear</Heading><Caption center>One tap, about 40 seconds. The dials below turn along with it.</Caption></View>}
+          extraFoot={<PreviewButton compact on={preview.on} busy={preview.busy} onPress={() => preview.toggle(profile)} />}
+          below={({ phase, index: driftAt }) => {
+            const drifting = phase === 'drifting' || phase === 'preparing';
+            return (
+              <View style={s.byHand}>
+                <Eyebrow>{drifting ? 'Turning by itself' : 'Or by hand'}</Eyebrow>
+                <View style={s.dials}>
+                  {DIAL_KEYS.map(k => (
+                    // While it drifts, Tone follows the sound and the others rest; afterwards all four are yours.
+                    <View key={k} style={[s.dial, drifting && k !== 'tone' && s.resting]} pointerEvents={drifting ? 'none' : 'auto'}>
+                      <ProfileDial which={k} profile={profile} onChange={dialed} size={tablet ? 104 : 92}
+                        disabled={k === 'hum' && hatesHum} follow={k === 'tone' && phase === 'drifting' ? driftAt : undefined} />
+                    </View>
+                  ))}
+                </View>
               </View>
-            ))}
-          </View>
-        </Row>
+            );
+          }} />
       </Card>
     </>
   );
@@ -113,9 +116,11 @@ export default function MySound() {
 
 const s = StyleSheet.create({
   header: { gap: space.xs },
-  dials: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around', rowGap: 18, paddingVertical: 8 },
+  dials: { alignSelf: 'stretch', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around', rowGap: 18, paddingVertical: 4 },
   find: { paddingVertical: 24 },
   findHead: { gap: 4, alignItems: 'center' },
+  byHand: { gap: 10, alignItems: 'center', borderTopWidth: 1, borderTopColor: colors.glassEdge, paddingTop: 18 },
+  resting: { opacity: 0.45 },
   dial: { flexBasis: '45%', alignItems: 'center' },
   // The two rows share one glass panel; the last row's hairline is hidden by the panel's own edge.
   rows: { paddingVertical: 4, paddingHorizontal: 14, gap: 0 },
