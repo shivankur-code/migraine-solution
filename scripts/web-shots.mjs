@@ -1,4 +1,5 @@
-// Click through the built web app in a real browser and save screenshots: the landing page, first-run setup,
+// Click through the built web app in a real browser and save screenshots: the landing page, first-run setup
+// (texture, then Find your sound: start, drift, one tap),
 // the Quiet room before and while playing, My sound and Journal. Runs on four phone sizes and a desktop.
 // On every screen it also checks the layout: no two visible controls, and no control and text, may sit
 // on top of each other (anything fully covered on purpose, like the room behind setup, is skipped).
@@ -122,16 +123,22 @@ async function run(name, viewport, { quick = false } = {}) {
   await page.getByText('Make my sound').waitFor({ timeout: 30000 });
   await shot('00-welcome', 2500);
   await page.getByText('Make my sound').click();
-  await page.getByText('Not sure').waitFor();
-  await shot('01-question');
-  await page.getByText('Hiss and high sounds').click();
   await page.getByText('Pick what feels restful').waitFor();
   await page.getByLabel('Ocean').click();
   await shot('02-texture', 2500);
   await page.getByText('Continue').click();
-  await page.getByText('Turn it to taste').waitFor();
-  await page.getByLabel('Tone up').click();
-  await shot('03-dial', 3000);
+  // Find your sound: start the drift, let it brighten a few steps, then tap anywhere.
+  await page.getByText('Find your sound').waitFor();
+  await shot('03a-find-ready', 1500);
+  await page.getByText('Start', { exact: true }).click();
+  await page.getByText('Tap when it’s too much.').waitFor({ timeout: 30000 });
+  await shot('03b-finding', quick ? 7000 : 12000);
+  {
+    const box = await page.getByLabel("That's too much").first().boundingBox();
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height * 0.45);
+  }
+  await page.getByText('Save my sound').waitFor();
+  await shot('03c-found', 2500);
   await page.getByText('Save my sound').click();
   await page.getByText('Rest here.').waitFor();
   await shot('04-quiet-room', 3000);

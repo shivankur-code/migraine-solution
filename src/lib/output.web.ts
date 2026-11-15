@@ -73,10 +73,13 @@ export function level(): number | null {
   return Math.sqrt(sum / samples.length);
 }
 
-/** Start a sound. levelDb is relative to the reference loudness; fades in over fadeIn seconds. */
-export async function play(key: string, { levelDb, fadeIn, loop = true }: { levelDb: number; fadeIn: number; loop?: boolean; title?: string }) {
+/**
+ * Start a sound. levelDb is relative to the reference loudness; fades in over fadeIn seconds.
+ * `crossfade` lets the sound already playing fade out over that many seconds while this one fades in.
+ */
+export async function play(key: string, { levelDb, fadeIn, loop = true, crossfade }: { levelDb: number; fadeIn: number; loop?: boolean; title?: string; crossfade?: number }) {
   const mine = ++generation;
-  stop(0.2);
+  stop(crossfade ?? 0.2);
   try { await context().resume(); } catch {}
   if (mine !== generation) return;
   const v = start(key, loop, 0);

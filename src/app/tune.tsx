@@ -1,5 +1,5 @@
-// My sound: a small mixer. Pick a texture and turn four dials while your sound plays; each change
-// saves at once. Choosing by ear (A/B) and account settings sit behind one tap each.
+// My sound: listen, pick a texture, and find the sound again with one tap (no dials). The four dials,
+// choosing by ear (A/B) and account settings sit behind one tap each, for good days.
 import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
@@ -9,10 +9,11 @@ import { loadProfile, saveOnboarded, saveProfile } from '../lib/storage';
 import * as player from '../lib/player';
 import { Tests } from '../components/build/Tests';
 import { PreviewButton, ProfileDial, TextureTiles, usePreview } from '../components/Studio';
+import { FindSound } from '../components/FindSound';
 import { AiReviewCard } from '../components/AiReviewCard';
 import { SupportCard } from '../components/SupportCard';
 import { AccountCard, SharingCard } from '../components/AccountCard';
-import { Body, Button, Caption, Card, Columns, confirmAction, Kicker, Row, Screen, Title, useTablet, useWide } from '../lib/ui';
+import { Body, Button, Caption, Card, Columns, confirmAction, Heading, Kicker, Row, Screen, Title, useTablet, useWide } from '../lib/ui';
 import { colors, space } from '../lib/theme';
 import { track } from '../lib/activity';
 
@@ -21,7 +22,7 @@ const DIAL_KEYS = ['tone', 'hum', 'motion', 'space'] as const;
 
 export default function MySound() {
   const [profile, setProfile] = useState<Profile>(freshProfile());
-  const [open, setOpen] = useState<'ear' | 'more' | null>(null);
+  const [open, setOpen] = useState<'ear' | 'more' | 'dials' | null>(null);
   const preview = usePreview();
   const wide = useWide();
   const tablet = useTablet();
@@ -31,6 +32,8 @@ export default function MySound() {
   }, []));
 
   const update = (next: Profile) => { setProfile(next); saveProfile(next); preview.update(next); };
+  // Found by ear: save it (the drift is already playing it, so the preview stays out of the way).
+  const found = (next: Profile) => { setProfile(next); saveProfile(next); };
   const hatesHum = (profile.intake.dislikes || []).includes('hum');
   // The cymatic figure of the sound the dials make; it reshapes as each dial is turned.
   const figure = figureFor(recipeFor(profile, 'warning').recipe);
@@ -43,14 +46,14 @@ export default function MySound() {
     router.navigate('/');
   });
 
-  const toggle = (k: 'ear' | 'more') => { preview.stop(); if (open !== k) track('step_open', { step: k }); setOpen(open === k ? null : k); };
+  const toggle = (k: 'ear' | 'more' | 'dials') => { preview.stop(); if (open !== k) track('step_open', { step: k }); setOpen(open === k ? null : k); };
 
   const mixer = (
     <>
       <View style={s.header}>
         <Kicker>My sound</Kicker>
         <Title accessibilityRole="header">Your sound</Title>
-        <Body color={colors.ink2}>Turn the dials and watch your sound take shape. Changes save by themselves.</Body>
+        <Body color={colors.ink2}>Listen, choose a texture, or find it again by ear. Changes save by themselves.</Body>
       </View>
 
       <PreviewButton on={preview.on} busy={preview.busy} arc={profile} figure={figure} onPress={() => preview.toggle(profile)} />
@@ -61,12 +64,22 @@ export default function MySound() {
         if (!preview.on) preview.start(next);
       }} />
 
-      <Card style={s.dials}>
-        {DIAL_KEYS.map(k => (
-          <View key={k} style={s.dial}>
-            <ProfileDial which={k} profile={profile} onChange={update} size={tablet ? 110 : 100} disabled={k === 'hum' && hatesHum} />
+      <Card style={s.find}>
+        <FindSound profile={profile} onFound={found} onStart={() => preview.stop()} size={tablet ? 220 : 200}
+          header={<View style={s.findHead}><Heading>Find it again, by ear</Heading><Caption>One tap, about 40 seconds. No dials.</Caption></View>} />
+      </Card>
+
+      <Card style={s.rows}>
+        <Row icon="options-outline" label="Fine-tune by hand" sub="Tone, hum, motion and space"
+          expanded={open === 'dials' || wide} onPress={() => toggle('dials')}>
+          <View style={s.dials}>
+            {DIAL_KEYS.map(k => (
+              <View key={k} style={s.dial}>
+                <ProfileDial which={k} profile={profile} onChange={update} size={tablet ? 110 : 100} disabled={k === 'hum' && hatesHum} />
+              </View>
+            ))}
           </View>
-        ))}
+        </Row>
       </Card>
     </>
   );
@@ -100,7 +113,9 @@ export default function MySound() {
 
 const s = StyleSheet.create({
   header: { gap: space.xs },
-  dials: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around', rowGap: 18, paddingVertical: 22 },
+  dials: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around', rowGap: 18, paddingVertical: 8 },
+  find: { paddingVertical: 24 },
+  findHead: { gap: 4, alignItems: 'center' },
   dial: { flexBasis: '45%', alignItems: 'center' },
   // The two rows share one glass panel; the last row's hairline is hidden by the panel's own edge.
   rows: { paddingVertical: 4, paddingHorizontal: 14, gap: 0 },
