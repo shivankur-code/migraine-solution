@@ -13,7 +13,7 @@ import { pendingFollowUp } from '../engine/journal-store.js';
 import { freshProfile, lowerState, recipeFor, SOFTER_DB, type Profile, type State } from '../lib/profile';
 import { loadJournal, loadOnboarded, loadProfile, loadQuietMode, saveJournal, saveOnboarded, saveProfile, saveQuietMode, type Session } from '../lib/storage';
 import { Onboarding } from '../components/Onboarding';
-import { textureName } from '../components/Studio';
+import { DIALS, textureName } from '../components/Studio';
 import * as player from '../lib/player';
 import { loadActivity, summarize, track } from '../lib/activity';
 import { Button, Caption, Columns, Fade, Greeting, Ionicons, Kicker, Label, Meta, muteHaptics, Press, Screen, Segmented, Status, useMaterial, useTablet, useWide, type IconName } from '../lib/ui';
@@ -184,9 +184,14 @@ export default function QuietRoom() {
     track('worse', { state: s, choice: live.current?.choice ?? null });
     if (live.current) live.current.worse = true;
     await end({ ask: false });
-    const { profile: next, loweredDb } = lowerState(await loadProfile(), s);
+    const lowered = lowerState(await loadProfile(), s);
+    // It also learns the direction: next time the sound starts one Tone step deeper (darker), too.
+    const toneNow = DIALS.tone.index(recipeFor(lowered.profile, 'normal').recipe);
+    const deeper = toneNow > 0;
+    const next = deeper ? { ...lowered.profile, tests: { ...lowered.profile.tests, ...DIALS.tone.tests(toneNow - 1) } } : lowered.profile;
     await saveProfile(next); setProfile(next);
-    setStatus(`Stopped. Silence may be best right now.${loweredDb ? ' Next time it will start quieter.' : ''} If this headache is new or different, get medical advice.`);
+    const learnt = lowered.loweredDb && deeper ? ' Next time it will start quieter and a little deeper.' : lowered.loweredDb ? ' Next time it will start quieter.' : deeper ? ' Next time it will start a little deeper.' : '';
+    setStatus(`Stopped. Silence may be best right now.${learnt} If this headache is new or different, get medical advice.`);
     setWorseNote(true); setBackedOff(true);
   };
 

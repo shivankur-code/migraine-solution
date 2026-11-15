@@ -1,21 +1,15 @@
-# First-run setup (one question, a texture, one dial), then the quiet room: play and stop (sound must start within 3 s), check-in, auto-dim and brighten, dark screen.
+# First-run setup (a texture, then Find your sound with one tap), then the quiet room: play and stop (sound must start within 3 s), check-in, auto-dim and brighten, dark screen.
 appId: com.stillsoundlab.still
 name: Quiet room
 ---
 - launchApp:
     clearState: true
-# 0. First-run setup: about 30 seconds, three taps and a dial.
+# 0. First-run setup: under a minute, no dials.
 - extendedWaitUntil:
     visible: "Make my sound"
     timeout: 20000
 - takeScreenshot: 00a-welcome
 - tapOn: "Make my sound"
-- extendedWaitUntil:
-    visible: "What's hardest on your ears?"
-    timeout: 6000
-- assertVisible: "Not sure"
-- takeScreenshot: 00b-question
-- tapOn: "Hiss and high sounds"
 - extendedWaitUntil:
     visible: "Pick what feels restful"
     timeout: 6000
@@ -23,16 +17,30 @@ name: Quiet room
 - takeScreenshot: 00c-texture
 - tapOn: "Continue"
 - extendedWaitUntil:
-    visible: "Turn it to taste"
+    visible: "Find your sound"
     timeout: 6000
-- tapOn: "Tone up"
-- takeScreenshot: 00d-dial
+- takeScreenshot: 00d-find
+- tapOn: "Start"
+# The drift brightens one step every 5 s; let it run a few steps, then tap anywhere.
+- extendedWaitUntil:
+    visible: "Tap when it’s too much."
+    timeout: 20000
+- extendedWaitUntil:
+    visible: "this text never appears"
+    timeout: 9000
+    optional: true
+- takeScreenshot: 00e-finding
+- tapOn: "That's too much"
+- extendedWaitUntil:
+    visible: "Save my sound"
+    timeout: 6000
+- takeScreenshot: 00f-found
 - tapOn: "Save my sound"
 - extendedWaitUntil:
     visible: "Rest here."
     timeout: 20000
 # The room renders behind setup, so also check that setup really closed.
-- assertNotVisible: "Turn it to taste"
+- assertNotVisible: "Find your sound"
 - takeScreenshot: 01-quiet-room
 # Give the background renderer a few seconds to prepare the sound, as a person would while reading.
 - extendedWaitUntil:

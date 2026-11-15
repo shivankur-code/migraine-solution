@@ -1,4 +1,4 @@
-// First-run setup: three taps and one dial, about 30 seconds. A full-screen overlay over a live
+// First-run setup: pick a texture, then find the sound with one tap (no dials), under a minute. A full-screen overlay over a live
 // Scene (rain until a texture is chosen), so the room is already there when the overlay lifts.
 // Every step can be skipped, and the sound plays while you choose, so people decide by ear.
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
@@ -14,13 +14,12 @@ import { useAppFonts } from '../lib/fonts';
 import { Control, Ionicons, Press, useGutter } from '../lib/ui';
 import { track } from '../lib/activity';
 import { Scene } from './Scene';
-import { usePreview, withHardest, type Hardest } from './Studio';
+import { usePreview } from './Studio';
 import { ProgressRail } from './onboarding/ProgressRail';
-import { DialPane, HardestPane, TexturePane, WelcomePane } from './onboarding/Panes';
+import { FindPane, TexturePane, WelcomePane } from './onboarding/Panes';
 
-const PANES = 4;
+const PANES = 3;
 const RISE = 12;          // the incoming pane settles up by this much
-const ADVANCE_MS = 260;   // let the chosen tile show its check before pane 1 moves on
 const LEAVE_MS = 500;     // the overlay lifts to reveal the lamp already in place
 
 export function Onboarding({ profile, onChange, onSaved, onDone }: {
@@ -31,11 +30,9 @@ export function Onboarding({ profile, onChange, onSaved, onDone }: {
   onDone: () => void;
 }) {
   const [step, setStep] = useState(0);
-  const [hardest, setHardest] = useState<Hardest | null>(null);
   const [leaving, setLeaving] = useState(false);
   const preview = usePreview();
   const gutter = useGutter();
-  const advance = useRef<ReturnType<typeof setTimeout> | null>(null);
   const left = useRef(false);
   const done = useRef(onDone);
   done.current = onDone;
@@ -45,9 +42,6 @@ export function Onboarding({ profile, onChange, onSaved, onDone }: {
   const ink = useSharedValue(ready ? 1 : 0);
   useEffect(() => { if (ready) ink.set(withTiming(1, cross(timing.crossfadeIn))); }, [ready, ink]);
 
-  useEffect(() => () => { if (advance.current) clearTimeout(advance.current); }, []);
-
-  const update = (p: Profile) => { onChange(p); preview.update(p); };
   const go = (n: number) => { track('onboarding_step', { step: n }); setStep(n); };
   const leave = useCallback(() => done.current(), []);
   // Stop the preview, then the haptic (nothing buzzes while sound plays), then lift the overlay.
@@ -63,12 +57,6 @@ export function Onboarding({ profile, onChange, onSaved, onDone }: {
     veil.set(withTiming(0, { duration: LEAVE_MS, easing: ease.exit }, finished => { if (finished) scheduleOnRN(leave); }));
   };
 
-  const pickHardest = (h: Hardest) => {
-    setHardest(h);
-    update(withHardest(profile, h));
-    if (advance.current) clearTimeout(advance.current);
-    advance.current = setTimeout(() => go(2), ADVANCE_MS);
-  };
   const pickTexture = (t: NonNullable<Profile['intake']['texture']>) => {
     const next = { ...profile, intake: { ...profile.intake, texture: t } };
     onChange(next);
@@ -78,9 +66,9 @@ export function Onboarding({ profile, onChange, onSaved, onDone }: {
   const renderPane = (n: number): ReactNode => {
     switch (n) {
       case 0: return <WelcomePane onStart={() => go(1)} onSkip={() => finish('skipped')} />;
-      case 1: return <HardestPane value={hardest} onPick={pickHardest} onContinue={() => { if (!hardest) update(withHardest(profile, 'unsure')); go(2); }} />;
-      case 2: return <TexturePane profile={profile} preview={preview} onPick={pickTexture} onContinue={() => { if (!preview.on) preview.start(profile); go(3); }} />;
-      default: return <DialPane profile={profile} preview={preview} onChange={update} onSave={() => finish('done')} />;
+      case 1: return <TexturePane profile={profile} preview={preview} onPick={pickTexture} onContinue={() => go(2)} />;
+      // The drift plays its own sound: the texture preview stops as it starts.
+      default: return <FindPane profile={profile} onFound={onChange} onStart={() => preview.stop()} onSave={() => finish('done')} />;
     }
   };
 
