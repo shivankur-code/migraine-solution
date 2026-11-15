@@ -1,5 +1,5 @@
 // Find your sound, with one tap. The sound starts at its gentlest (deepest, darkest) and slowly
-// brightens through the seven Tone settings, about 40 seconds in all, each change a slow crossfade.
+// brightens through seven steps, all four dials moving together (see DRIFT), about 40 seconds in all, each change a slow crossfade.
 // The person taps anywhere the moment it feels like too much; Still keeps the setting one step
 // gentler than that. Noticing "too much" is far easier than judging "best" while a sound moves,
 // and doing nothing is safe: with no tap it keeps a warm, gentle middle.
@@ -26,6 +26,27 @@ const N = STOPS.length;
 const STEP_MS = 5000;                       // each setting plays this long
 const XFADE_S = 2.5;                        // and blends into the next over this long
 const UNTOUCHED = 2;                        // no tap at all: keep "Warm", the gentle middle
+
+/**
+ * The drift's one path through all four dials, one row per dial, one column per step (Deepest … Airy).
+ * Tone brightens a step at a time; Motion and Space open up every other step; a hum only joins, as a
+ * hint, in the last two steps (in our comfort test a hum made the sound less pleasant, so it belongs
+ * at the "too much" end), and never for someone who said they dislike hums.
+ */
+export const DRIFT = {
+  tone:   [0, 1, 2, 3, 4, 5, 6],   // Deepest, Deep, Warm, Soft, Clear, Bright, Airy
+  motion: [0, 0, 1, 1, 2, 2, 3],   // Still, Drift, Tide, Breathe
+  space:  [0, 1, 1, 2, 3, 3, 4],   // Centred, Close, Natural, Open, Wide
+  hum:    [0, 0, 0, 0, 0, 1, 1],   // None, A hint
+} as const;
+export type DriftDial = keyof typeof DRIFT;
+const hatesHum = (p: Profile) => (p.intake.dislikes || []).includes('hum');
+/** Where a dial sits at a step of the drift, for this person. */
+export const driftStop = (p: Profile, dial: DriftDial, i: number) => (dial === 'hum' && hatesHum(p) ? 0 : DRIFT[dial][i]);
+/** The person's profile at a step of the drift: all four dials set together. */
+export function driftProfile(p: Profile, i: number): Profile {
+  return (Object.keys(DRIFT) as DriftDial[]).reduce((acc, d) => withDial(acc, d, driftStop(p, d, i)), p);
+}
 const ARC = 0.75;                           // the ring is a 270° arc, open at the bottom
 
 export type Phase = 'ready' | 'preparing' | 'drifting' | 'found';
@@ -57,7 +78,7 @@ export function FindSound({ profile, onFound, onStart, header, saveLabel, onSave
   const size = fixed ?? Math.min(width - 48, height < 700 ? 220 : 280, 320);
 
   // One profile per setting, from the person's own sound (texture, loudness and the rest kept).
-  const steps = useMemo(() => STOPS.map((_, i) => withDial(profile, 'tone', i)), [profile]);
+  const steps = useMemo(() => STOPS.map((_, i) => driftProfile(profile, i)), [profile]);
   const stepsRef = useRef(steps);
   stepsRef.current = steps;
 
