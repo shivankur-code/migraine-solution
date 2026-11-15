@@ -14,7 +14,7 @@ function pickModel(): ReviewModel | null {
     return openRouterModel({ apiKey: orKey, ...(models.length ? { models } : {}) });
   }
   if (process.env.ANTHROPIC_API_KEY) {
-    const client = new Anthropic({ timeout: 240_000, maxRetries: 2 });
+    const client = new Anthropic({ timeout: 45_000, maxRetries: 1 });
     return anthropicModel(params => client.beta.messages.create(params));
   }
   return null;
@@ -53,6 +53,7 @@ export async function review(request: HttpRequest): Promise<HttpResponseInit> {
   try {
     return { status: 200, jsonBody: await reviewRecipe(model, body) };
   } catch (error) {
+    if (error instanceof ProviderError && error.status === 504) return { status: 504, jsonBody: { error: 'timeout' } };
     if (error instanceof Anthropic.RateLimitError || (error instanceof ProviderError && error.status === 429)) return { status: 429, jsonBody: { error: 'busy' } };
     if (error instanceof Anthropic.AuthenticationError || (error instanceof ProviderError && (error.status === 401 || error.status === 403))) return { status: 503, jsonBody: { error: 'not-configured' } };
     if (error instanceof Anthropic.APIError || error instanceof ProviderError) return { status: 502, jsonBody: { error: 'upstream' } };

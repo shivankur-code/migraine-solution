@@ -23,7 +23,9 @@ export const SYSTEM_PROMPT = `You review personal comfort-sound recipes for Stil
 
 You receive one person's data as JSON: questionnaire answers (0-4 bother scales, categories they like or can't stand, listening device, goal), a per-band comfort contour (dB relative to their quiet reference; lower means more sensitive), results of focused two-choice listening tests (value plus number of trials), how many A/B fine-tuning choices they made, per-state quieting after "this made it worse", journal counts (episodes, what they chose, how it felt afterwards), and the recipes Still's rules currently produce for a normal day and for a headache.
 
-Your job: decide whether the rules missed something in this person's data, and if so propose small adjustments. Most of the time the right answer is few or no changes. Always write a summary of 2 to 4 plain sentences addressed to the person: what you checked, what you changed and why, and, when you change nothing, why their current sound already fits them (name one or two specific settings and what they matched in their answers or tests). Measured test results are better evidence about this person than group research; do not override a measured value unless their journal shows a clear problem with it (for example repeated "worse" ratings). Prefer changes that make the sound gentler when in doubt.
+The data may include "draft": the review Still's on-device check already made with simple rules. Start from it: keep the parts the data supports, drop or soften any that it does not, and add what the rules missed. Your adjustments replace the draft's completely, so list every change you want applied, including each draft change you keep (if you agree with the whole draft, copy its adjustments exactly). Your summary must describe only the changes in your adjustments.
+
+Your job: decide whether the rules missed something in this person's data, and if so propose small adjustments. Most of the time the right answer is few or no changes. Be brief: the person is waiting. Always write a summary of 2 to 3 plain sentences addressed to the person: what you checked, what you changed and why, and, when you change nothing, why their current sound already fits them (name one or two specific settings and what they matched in their answers or tests). Measured test results are better evidence about this person than group research; do not override a measured value unless their journal shows a clear problem with it (for example repeated "worse" ratings). Prefer changes that make the sound gentler when in doubt.
 
 Settings you may adjust (absolute values, except levelOffsetDb which is relative): ${ADJUSTABLE.join(', ')}, plus extraCuts (a list of {hz, gainDb} cuts). Limits, which the app enforces anyway: tiltDbPerOct ${BOUNDS.tiltDbPerOct.join(' to ')}; cutoffHz ${BOUNDS.cutoffHz.join(' to ')}; tonal ${BOUNDS.tonal.join(' to ')}; humHz ${BOUNDS.humHz.join(' to ')}; swellDb ${BOUNDS.swellDb.join(' to ')}; swellPeriodS ${BOUNDS.swellPeriodS.join(' to ')}; width ${BOUNDS.width.join(' to ')}; fadeInS ${BOUNDS.fadeInS.join(' to ')} (can only lengthen); levelOffsetDb -20 to 0 (can only make quieter); extraCuts gainDb -12 to 0 (cuts only, never boosts). Leave out any setting you would not change.
 
@@ -37,7 +39,7 @@ export function validateRequest(raw: unknown): Record<string, unknown> {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('bad-request');
   const body = raw as Record<string, unknown>;
   if (!body.recipes || typeof body.recipes !== 'object') throw new Error('bad-request');
-  const allowed = ['intake', 'calibration', 'tests', 'learnedRounds', 'trims', 'recipes', 'feedback'];
+  const allowed = ['intake', 'calibration', 'tests', 'learnedRounds', 'trims', 'recipes', 'feedback', 'draft'];
   const clean = Object.fromEntries(allowed.filter(k => k in body).map(k => [k, body[k]]));
   if (JSON.stringify(clean).length > MAX_REQUEST_BYTES) throw new Error('too-large');
   return clean;
@@ -57,11 +59,11 @@ export function anthropicModel(create: CreateFn): ReviewModel {
   return async (system, user) => {
     const message = await create({
       model: MODEL,
-      max_tokens: 16000,
+      max_tokens: 8000,
       betas: ['server-side-fallback-2026-07-01'],
       fallbacks: 'default',
       thinking: { type: 'adaptive' },
-      output_config: { effort: 'high', format: { type: 'json_schema', schema: REVIEW_SCHEMA } },
+      output_config: { effort: 'low', format: { type: 'json_schema', schema: REVIEW_SCHEMA } },
       system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: user }],
     });
@@ -71,33 +73,64 @@ export function anthropicModel(create: CreateFn): ReviewModel {
   };
 }
 
-/** Free models first: tried in order by OpenRouter, each held to the review's JSON schema. */
+/** Free models, all asked at once; the first valid answer wins. */
 // Only free models whose providers do not collect or train on prompts (OpenRouter data_collection: deny).
-export const FREE_MODELS = ['dots-studio/dots-3-note-preview:free', 'xingchen-agi/xing4.0-29b-a4b:free'];
+// Checked Nov 2026: these hold to the review's JSON schema under that policy. The list changes often.
+export const FREE_MODELS = ['baidu/ernie-5.5-flash-preview:free', 'dots-studio/dots-3-note-preview:free', 'inclusionai/ling-3.2-flash:free'];
+/** A review never waits longer than this for a model. */
+export const DEADLINE_MS = 50_000;
 
-/** Models on OpenRouter (free ":free" models by default). */
-export function openRouterModel({ apiKey, models = FREE_MODELS, fetchFn = fetch }: { apiKey: string; models?: string[]; fetchFn?: typeof fetch }): ReviewModel {
-  return async (system, user) => {
+/** One model on OpenRouter. */
+export function openRouterOne({ apiKey, model, fetchFn = fetch }: { apiKey: string; model: string; fetchFn?: typeof fetch }) {
+  return async (system: string, user: string, signal?: AbortSignal): Promise<ModelReply> => {
     const res = await fetchFn('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
+      method: 'POST', signal,
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}`, 'X-Title': 'Still sound review' },
       body: JSON.stringify({
-        model: models[0],
-        models,                                   // OpenRouter tries the next one if a model is down or rate-limited
+        model,
         messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
         response_format: { type: 'json_schema', json_schema: { name: 'sound_recipe_review', strict: true, schema: REVIEW_SCHEMA } },
         // Only providers that enforce the schema, and that do not store or train on the request.
         provider: { require_parameters: true, data_collection: 'deny' },
-        max_tokens: 24000,
+        reasoning: { effort: 'low', exclude: true },   // short thinking: most of the wait was reasoning
+        max_tokens: 8000,
       }),
     });
     const body: any = await res.json().catch(() => ({}));
-    if (!res.ok || body?.error) throw new ProviderError(body?.error?.code ?? res.status, String(body?.error?.message ?? `HTTP ${res.status}`).slice(0, 200));
+    if (!res.ok || body?.error) throw new ProviderError(Number(body?.error?.code ?? res.status) || 502, String(body?.error?.message ?? `HTTP ${res.status}`).slice(0, 200));
     const choice = body?.choices?.[0];
     if (choice?.finish_reason === 'length') return { kind: 'truncated' };
     if (choice?.finish_reason === 'content_filter' || choice?.message?.refusal) return { kind: 'refused' };
     return { kind: 'ok', text: String(choice?.message?.content ?? '') };
   };
+}
+
+/**
+ * Free models on OpenRouter, asked in parallel. The first reply that parses as a review wins and
+ * the others are cancelled. Free models are often rate-limited or down, so racing them is what
+ * makes the review fast and dependable. Throws the most telling error if none answers in time.
+ */
+export function openRouterModel({ apiKey, models = FREE_MODELS, fetchFn = fetch, deadlineMs = DEADLINE_MS }: { apiKey: string; models?: string[]; fetchFn?: typeof fetch; deadlineMs?: number }): ReviewModel {
+  const askers = models.map(model => openRouterOne({ apiKey, model, fetchFn }));
+  return (system, user) => new Promise((resolve, reject) => {
+    const stop = new AbortController();
+    const timer = setTimeout(() => { stop.abort(); reject(new ProviderError(504, 'timeout')); }, deadlineMs);
+    let pending = askers.length, refused = false;
+    let lastError: unknown = new ProviderError(502, 'no-model');
+    const finish = (reply: ModelReply) => { clearTimeout(timer); stop.abort(); resolve(reply); };
+    for (const ask of askers) {
+      ask(system, user, stop.signal).then(reply => {
+        if (reply.kind === 'ok') { try { JSON.parse(reply.text); return finish(reply); } catch { lastError = new Error('unparseable-review'); } }
+        else if (reply.kind === 'refused') refused = true;
+        else lastError = new Error('incomplete-review');
+      }, error => { if (!stop.signal.aborted) lastError = error; }).finally(() => {
+        if (--pending === 0 && !stop.signal.aborted) {
+          clearTimeout(timer);
+          if (refused) resolve({ kind: 'refused' }); else reject(lastError);
+        }
+      });
+    }
+  });
 }
 
 export async function reviewRecipe(model: ReviewModel, request: Record<string, unknown>): Promise<Review> {

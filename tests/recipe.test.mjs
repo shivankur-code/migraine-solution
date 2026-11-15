@@ -129,3 +129,46 @@ import('../src/recipe/review.js').then(({ buildReviewRequest }) => {
   for (const w of d.why) for (const e of w.evidence) assert.ok(EVIDENCE[e], e);
 }
 console.log('comfort-study defaults ok');
+
+// ---- On-device check (quick-review.js) ----
+{
+  const { quickReview } = await import('../src/recipe/quick-review.js');
+  const { readFileSync } = await import('node:fs');
+  const base = JSON.parse(readFileSync(new URL('../server/test/fixtures/sample-request.json', import.meta.url), 'utf8'));
+  const asReq = r => ({ ...r, intake: { soundBother: r.intake.bother, dislikes: r.intake.dislikes, loves: r.intake.loves } });
+  // Doing well: no changes, and the summary says why it fits.
+  const fine = quickReview(asReq(base));
+  assert.deepEqual(fine.adjustments, {});
+  assert.match(fine.summary, /Nothing needs changing/);
+  // Struggling: worse often, hum they dislike, bright → quieter, darker, no hum, a caution.
+  const bad = asReq(structuredClone(base));
+  bad.intake.dislikes = ['hum']; bad.recipes.attack.tonal = 0.3; bad.recipes.attack.cutoffHz = 5200; bad.recipes.attack.tiltDbPerOct = -2.5;
+  bad.feedback = { sessions: 8, choices: { silence: 1, comfort: 7, softer: 5 }, followUps: { better: 1, same: 2, worse: 4, skipped: 1 }, worseSessions: 4, medianListeningMin: 6 };
+  const out = quickReview(bad);
+  assert.equal(out.adjustments.levelOffsetDb, -6);
+  assert.equal(out.adjustments.tonal, 0);
+  assert.ok(out.adjustments.tiltDbPerOct < -2.5 && out.adjustments.cutoffHz < 5200);
+  assert.ok(out.cautions.length === 1 && out.questions.length === 1);
+  assert.equal(out.rationale.length, Object.keys(out.adjustments).length);
+  // Never louder or brighter: every change respects the review's own limits.
+  assert.ok(out.adjustments.levelOffsetDb <= 0 && out.adjustments.fadeInS >= bad.recipes.attack.fadeInS);
+  // No data at all: no changes, a helpful next step.
+  const empty = quickReview({ recipes: { attack: {} } });
+  assert.deepEqual(empty.adjustments, {});
+  assert.ok(empty.questions.length >= 1 && empty.summary.length > 0);
+  // Applied without AI consent (nothing was sent), ignored for an AI review without consent.
+  const { buildRecipe } = await import('../src/recipe/recipe.js');
+  const prof = { intake: {}, tests: {}, consentAI: false, aiReview: { at: 'x', source: 'device', adjustments: { levelOffsetDb: -6 }, rationale: [] } };
+  const plain = buildRecipe({ ...prof, aiReview: null }, 'normal').recipe.levelDb;
+  assert.equal(buildRecipe(prof, 'normal').recipe.levelDb, plain - 6);
+  assert.equal(buildRecipe({ ...prof, aiReview: { ...prof.aiReview, source: 'ai' } }, 'normal').recipe.levelDb, plain);
+  // The AI can add changes but never undo the journal's protective ones.
+  const { mergeWithDraft } = await import('../src/recipe/quick-review.js');
+  const merged = mergeWithDraft({ summary: 's', adjustments: { tonal: 0, levelOffsetDb: -2 }, rationale: [{ param: 'tonal', why: 'w', evidence: [] }], cautions: [], questions: [] }, out);
+  assert.equal(merged.adjustments.levelOffsetDb, -6);
+  assert.equal(merged.adjustments.fadeInS, out.adjustments.fadeInS);
+  assert.equal(merged.adjustments.tonal, 0);
+  assert.ok(merged.rationale.some(r => r.param === 'levelOffsetDb') && merged.cautions.length === 1);
+  assert.equal(mergeWithDraft({ adjustments: { levelOffsetDb: -9 }, rationale: [], cautions: [] }, out).adjustments.levelOffsetDb, -9);
+  console.log('quick review ok');
+}

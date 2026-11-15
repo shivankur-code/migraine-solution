@@ -21,7 +21,7 @@ const DIAL_KEYS = ['tone', 'hum', 'motion', 'space'] as const;
 
 export default function MySound() {
   const [profile, setProfile] = useState<Profile>(freshProfile());
-  const [open, setOpen] = useState<'ear' | 'more' | 'dials' | null>(null);
+  const [open, setOpen] = useState<'ear' | 'more' | 'dials' | 'check' | null>(null);
   const preview = usePreview();
   const wide = useWide();
   const tablet = useTablet();
@@ -45,7 +45,7 @@ export default function MySound() {
     router.navigate('/');
   });
 
-  const toggle = (k: 'ear' | 'more' | 'dials') => { preview.stop(); if (open !== k) track('step_open', { step: k }); setOpen(open === k ? null : k); };
+  const toggle = (k: 'ear' | 'more' | 'dials' | 'check') => { preview.stop(); if (open !== k) track('step_open', { step: k }); setOpen(open === k ? null : k); };
 
   const mixer = (
     <>
@@ -94,9 +94,12 @@ export default function MySound() {
           expanded={open === 'ear'} onPress={() => toggle('ear')}>
           <Tests profile={profile} onChange={update} keys={EAR_TESTS} />
         </Row>
-        <Row icon="settings-outline" label="Account and privacy" sub="Optional sign-in, sharing, AI suggestions"
-          expanded={open === 'more' || wide} onPress={() => toggle('more')}>
+        <Row icon="sparkles-outline" label="Check my sound" sub="Instant, on this device · optional AI second opinion"
+          expanded={open === 'check' || wide} onPress={() => toggle('check')}>
           <AiReviewCard profile={profile} onChange={update} />
+        </Row>
+        <Row icon="settings-outline" label="Account and privacy" sub="Optional sign-in, sharing"
+          expanded={open === 'more' || wide} onPress={() => toggle('more')}>
           <AccountCard />
           <SharingCard />
           <SupportCard />

@@ -226,11 +226,12 @@ export function buildRecipe(profile, state = 'attack', extra = {}) {
     sources: { tilt: tiltSource },
   };
 
-  // ---- AI review: bounded adjustments, only with consent ----
-  const ai = profile.consentAI ? profile.aiReview : null;
+  // ---- Review: bounded adjustments. The on-device check needs no consent (nothing is sent);
+  // an AI review applies only while the person allows AI suggestions. ----
+  const ai = profile.aiReview && (profile.consentAI || profile.aiReview.source === 'device') ? profile.aiReview : null;
   if (ai?.adjustments) {
     recipe = applyAdjustments(recipe, ai.adjustments);
-    for (const r of ai.rationale || []) note(r.param, r.value ?? '', 'ai', r.why, ['personal']);
+    for (const r of ai.rationale || []) note(r.param, r.value ?? '', ai.source === 'device' ? 'review' : 'ai', r.why, ['personal']);
   }
 
   recipe = clampRecipe(recipe, state, ceiling);

@@ -64,7 +64,8 @@ const orOut = await reviewRecipe(openRouterModel({ apiKey: 'k', fetchFn: orFetch
 assert.equal(orOut.adjustments.width, 0.2);
 assert.equal(orReq.url, 'https://openrouter.ai/api/v1/chat/completions');
 assert.equal(orReq.init.headers.Authorization, 'Bearer k');
-assert.deepEqual(orReq.body.models, FREE_MODELS);
+assert.ok(FREE_MODELS.includes(orReq.body.model));
+assert.equal(orReq.body.reasoning.effort, 'low');
 assert.ok(FREE_MODELS.every(m => m.endsWith(':free')), 'default models are free');
 assert.equal(orReq.body.response_format.json_schema.strict, true);
 assert.deepEqual(orReq.body.response_format.json_schema.schema, REVIEW_SCHEMA);
@@ -74,6 +75,27 @@ assert.equal(orReq.body.messages[0].content, SYSTEM_PROMPT);
 await assert.rejects(reviewRecipe(openRouterModel({ apiKey: 'k', fetchFn: orFetch(200, { choices: [{ finish_reason: 'length', message: { content: '{' } }] }) }), request));
 await assert.rejects(reviewRecipe(openRouterModel({ apiKey: 'k', fetchFn: orFetch(429, { error: { code: 429, message: 'rate limited' } }) }), request),
   (e: unknown) => e instanceof ProviderError && e.status === 429);
+// Racing: every model is asked at once; the first valid answer wins, even if another is slow or broken.
+{
+  const asked: string[] = [];
+  const race = (async (_u: any, init: any) => {
+    const { model } = JSON.parse(init.body); asked.push(model);
+    if (model === 'slow') await new Promise((ok, no) => { const t = setTimeout(ok, 5000); init.signal?.addEventListener('abort', () => { clearTimeout(t); no(new Error('aborted')); }); });
+    if (model === 'broken') return new Response(JSON.stringify({ error: { code: 502, message: 'down' } }), { status: 502 });
+    if (model === 'junk') return new Response(JSON.stringify({ choices: [{ finish_reason: 'stop', message: { content: 'not json' } }] }), { status: 200 });
+    return new Response(JSON.stringify(okBody), { status: 200 });
+  }) as typeof fetch;
+  const t = Date.now();
+  const won = await reviewRecipe(openRouterModel({ apiKey: 'k', models: ['slow', 'broken', 'junk', 'good'], fetchFn: race }), request);
+  assert.equal(won.adjustments.width, 0.2);
+  assert.deepEqual(asked.sort(), ['broken', 'good', 'junk', 'slow']);
+  assert.ok(Date.now() - t < 1000, 'did not wait for the slow model');
+  await assert.rejects(reviewRecipe(openRouterModel({ apiKey: 'k', models: ['slow'], fetchFn: race, deadlineMs: 50 }), request),
+    (e: unknown) => e instanceof ProviderError && e.status === 504);
+  await assert.rejects(reviewRecipe(openRouterModel({ apiKey: 'k', models: ['broken', 'junk'], fetchFn: race }), request));
+  // The on-device draft is passed through to the model.
+  assert.ok('draft' in validateRequest({ recipes: {}, draft: { summary: 'x' } }));
+}
 console.log('server ok');
 
 // Sign-in check for the review endpoint: Supabase decides who may ask, and how often.

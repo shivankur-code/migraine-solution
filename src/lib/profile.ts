@@ -28,7 +28,7 @@ export type Intake = {
 };
 export type Measured = { value: number; trials: number; decisive?: number; at?: string };
 export type Tests = Partial<Record<'tilt' | 'cutoff' | 'tonal' | 'humHz' | 'swellDb' | 'swellPeriodS' | 'width' | 'harmonics', Measured>>;
-export type AiReview = { at: string; summary?: string; adjustments: Record<string, unknown>; rationale: { param: string; value?: unknown; why: string }[]; cautions?: string[]; questions?: string[] };
+export type AiReview = { at: string; source?: 'device' | 'ai'; summary?: string; adjustments: Record<string, unknown>; rationale: { param: string; value?: unknown; why: string }[]; cautions?: string[]; questions?: string[] };
 export type Profile = {
   schema: string;
   answers: Partial<Record<'sudden' | 'high' | 'low' | 'pulse', number>>;  // v1 quick questions
