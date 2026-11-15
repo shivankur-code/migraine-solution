@@ -609,8 +609,8 @@ export function Card({ children, style, accent }: { children: ReactNode; style?:
   return <View style={[styles.card, material.fill, accent && { borderColor: colors.lampDeep }, style]}>{children}</View>;
 }
 
-// Frosted glass on the web (iOS and Android get the translucent fill alone: a blur per panel costs too much there).
-const glassBlur = (Platform.OS === 'web' ? { backdropFilter: 'blur(18px) saturate(1.3)' } : {}) as ViewStyle;
+// No blur on panels or buttons: they sit on smooth gradients, where a blur adds nothing, and a blur
+// inside another blurred panel makes Chrome draw a visible seam. Only the tab bar and sidebar blur.
 
 export const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.night },
@@ -647,9 +647,9 @@ export const styles = StyleSheet.create({
   buttonLines: { flex: 1, gap: 2, minWidth: 0 },
   primary: { backgroundColor: colors.lamp, borderColor: 'rgba(255,236,205,0.28)', boxShadow: '0 8px 24px -8px rgba(194,154,98,0.55)' },
   primaryFill: { borderRadius: radius.button, boxShadow: 'inset 0 1px 0 rgba(255,244,225,0.5), inset 0 -1px 0 rgba(0,0,0,0.18)' },
-  smoke: { backgroundColor: colors.glassFill, borderColor: colors.glassEdge, borderTopColor: colors.glassLit, ...glassBlur },
+  smoke: { backgroundColor: colors.glassFill, borderColor: colors.glassEdge, borderTopColor: colors.glassLit },
   quiet: { backgroundColor: 'transparent', borderColor: 'transparent' },
-  rose: { minHeight: 52, paddingVertical: 13, backgroundColor: colors.roseFill, borderColor: colors.roseLine, ...glassBlur },
+  rose: { minHeight: 52, paddingVertical: 13, backgroundColor: colors.roseFill, borderColor: colors.roseLine },
   disabled: { opacity: 0.38 },
   selected: { backgroundColor: 'rgba(194,154,98,0.12)', borderColor: colors.lampDeep },
   segmented: { flexDirection: 'row', gap: 8 },
@@ -676,6 +676,6 @@ export const styles = StyleSheet.create({
   status: { minHeight: 48, justifyContent: 'center' },
   statusWorse: { borderLeftWidth: 2, borderLeftColor: colors.rose, paddingLeft: 12 },
   statusInner: { gap: 4 },
-  card: { backgroundColor: colors.glassFill, borderWidth: 1, borderColor: colors.glassEdge, borderTopColor: colors.glassLit, borderRadius: radius.card, padding: 20, gap: 10, ...glassBlur },
+  card: { backgroundColor: colors.glassFill, borderWidth: 1, borderColor: colors.glassEdge, borderTopColor: colors.glassLit, borderRadius: radius.card, padding: 20, gap: 10 },
   cardTitle: { color: colors.ink, fontFamily: fonts.display, fontSize: 22, lineHeight: 28 },
 });
