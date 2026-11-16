@@ -26,6 +26,10 @@ import { Cymatics } from '../components/Cymatics';
 import { CHECK_IN_HEIGHT, CheckIn } from '../components/room/CheckIn';
 import { DimVeil } from '../components/room/DimVeil';
 import { DarkScreen } from '../components/room/DarkScreen';
+import * as Haptics from 'expo-haptics';
+import { understand } from '../engine/voice-commands.js';
+import { startListening, stopListening, voiceStatus } from '../lib/voice';
+import { askModel } from '../lib/voiceAsk';
 
 type Choice = Session['choice'];
 type Live = { id: string; at: string; state: State; choice: Choice; startMs: number; levelDb: number | null; worse: boolean };
@@ -117,11 +121,7 @@ export default function QuietRoom() {
   useEffect(() => { if (dimmed || dark) measureLamp(); }, [dimmed, dark, measureLamp]);
 
   /** Your recipe for this state, or a softer, darker version of it (never louder, never brighter). */
-  const recipes = useMemo(() => {
-    const comfort = recipeFor(profile, state).recipe;
-    const softer = clampRecipe({ ...applyAdjustments(comfort, { tiltDbPerOct: comfort.tiltDbPerOct - 1.5, cutoffHz: comfort.cutoffHz * 0.6, swellDb: 0, levelOffsetDb: SOFTER_DB }), textureAmount: comfort.textureAmount * 0.5 }, state, comfort.levelDb);
-    return { comfort, softer };
-  }, [profile, state]);
+  const recipes = useMemo(() => roomRecipes(profile, state), [profile, state]);
 
   // Prepare both sounds for this state while the screen is idle.
   // Also again when the first-run setup closes: its preview was playing, and background renders
@@ -148,8 +148,16 @@ export default function QuietRoom() {
     if (ask && !s.worse) setCheckFor(s.id);
   };
 
-  const playSound = async (choice: 'comfort' | 'softer') => {
-    const r = recipes[choice];
+  // Fade the sound out a minute before the timer ends. Both steps live in `sleep`, so a stop, a new
+  // sound or leaving the screen cancels the second one too.
+  const scheduleSleep = (minutes: number) => {
+    if (sleep.current) { clearTimeout(sleep.current); sleep.current = null; }
+    if (minutes) sleep.current = setTimeout(() => { player.stop(60); sleep.current = setTimeout(() => { end({ ask: false }); setPlaying(null); say('Faded to silence. Rest well.'); }, 61000); }, Math.max(0, minutes - 1) * 60000);
+  };
+
+  /** Start a sound. A voice change passes the new recipe and a crossfade, so the change blends in. */
+  const playSound = async (choice: 'comfort' | 'softer', { recipe, crossfade, minutes }: { recipe?: Recipe; crossfade?: number; minutes?: number } = {}) => {
+    const r = recipe ?? recipes[choice];
     // Update the screen first; finish the bookkeeping and loading after.
     player.cancelPrewarm(); // never let a background render block the stop button
     setPlaying(choice); setCheckFor(null); setPreparing(true); say('');
@@ -160,15 +168,13 @@ export default function QuietRoom() {
     try {
       const uri = await player.recipeFile(r);
       if (live.current?.choice !== choice) return;
-      await player.play(uri, { levelDb: r.levelDb, fadeIn: r.fadeInS, title: choice === 'softer' ? 'Softer and darker' : 'My sound' });
+      await player.play(uri, { levelDb: r.levelDb, fadeIn: crossfade ?? r.fadeInS, crossfade, title: choice === 'softer' ? 'Softer and darker' : 'My sound' });
     } catch {
       say('Could not start the sound on this device.'); setPlaying(null); live.current = null; setPreparing(false); return;
     }
     setPreparing(false);
-    const minutes = Number(timer);
-    // Both steps live in `sleep`, so a stop, a new sound or leaving the screen cancels the second one too.
-    if (minutes) sleep.current = setTimeout(() => { player.stop(60); sleep.current = setTimeout(() => { end({ ask: false }); setPlaying(null); say('Faded to silence. Rest well.'); }, 61000); }, Math.max(0, minutes - 1) * 60000);
-    say('Fading in. It keeps playing if you lock the phone.');
+    scheduleSleep(minutes ?? Number(timer));
+    if (!crossfade) say('Fading in. It keeps playing if you lock the phone.');
   };
 
   const stopSound = () => {
@@ -177,6 +183,80 @@ export default function QuietRoom() {
   };
   const darkOnly = () => { track('dark_screen', { state }); player.stop(2); setPlaying(null); end({ ask: false }); setCheckFor(null); begin('silence', null); setDark(true); };
   const leaveDark = () => { setDark(false); if (live.current?.choice === 'silence') end(); };
+
+  // ---------------------------------------------------------------- voice: hold, speak, let go
+  // Nothing talks back: the answer is the sound changing, with one light tap (or two soft taps when
+  // it was not understood, and nothing changes). Phones only; the words are worked out on the phone,
+  // and only people who switched on AI (and are signed in) have leftovers sent, as text, to the model.
+  const [listening, setListening] = useState(false);
+  const listeningRef = useRef(false);
+  const [voiceOk] = useState(() => (Platform.OS === 'web' ? 'unsupported' : voiceStatus()));
+  const hold = async () => {
+    if (listeningRef.current) return;
+    const r = await startListening();
+    if (r !== 'listening') {
+      notUnderstood();
+      say(r === 'asked' ? 'Thank you. Now hold again and speak.'
+        : r === 'denied' ? 'Still cannot hear you: the microphone is off for Still in Settings.'
+        : r === 'offline-missing' ? 'Voice needs offline speech recognition, which this phone does not have yet.'
+        : 'Voice is not available on this device.');
+      return;
+    }
+    listeningRef.current = true; setListening(true);
+    player.duck(true); confirmTap();
+    if (!dark) say('Listening… let go when you are done.');
+  };
+  const release = async () => {
+    if (!listeningRef.current) return;
+    listeningRef.current = false; setListening(false);
+    const words = await stopListening();
+    player.duck(false);
+    let heard = understand(words);
+    if (!heard.intents.length && heard.timer === null && words && profile.consentAI) heard = { ...(await askModel(words) ?? heard), layer: 3 };
+    if (!heard.intents.length && heard.timer === null) { notUnderstood(); if (!dark) say(words ? 'Not sure what you meant. Nothing changed.' : 'Did not catch that. Nothing changed.'); return; }
+    track('voice', { intents: heard.intents.join(','), timer: heard.timer, layer: heard.layer });
+    await applyVoice(heard.intents, heard.timer);
+    confirmTap();
+  };
+
+  const applyVoice = async (intents: string[], minutes: number | null) => {
+    if (intents[0] === 'worse') { if (playingNow) await worse(); return; }
+    if (intents[0] === 'stop') { if (playing && playing !== 'silence') stopSound(); else say('Already quiet.'); return; }
+    if (intents[0] === 'dark') { if (!dark) darkOnly(); return; }
+    let p = profile, changed = false, softer = false, play = false;
+    const done: string[] = [];
+    for (const i of intents) {
+      const dial = DIAL_FOR[i];
+      if (dial) {
+        const at = DIALS[dial].index(recipeFor(p, 'normal').recipe);
+        if (at > 0) { p = { ...p, tests: { ...p.tests, ...DIALS[dial].tests(at - 1) } }; changed = true; done.push(SAID[i]); }
+      } else if (i === 'rain' || i === 'ocean' || i === 'fan' || i === 'hush') {
+        const t: NonNullable<Profile['intake']['texture']> = i === 'hush' ? 'none' : i;
+        if (p.intake.texture !== t) { p = { ...p, intake: { ...p.intake, texture: t } }; changed = true; }
+        done.push(SAID[i]); if (!playingNow) play = true;
+      } else if (i === 'softer') softer = true;
+      else if (i === 'play') play = true;
+    }
+    let st = state;
+    if (softer) {
+      if (playing === 'softer' || (!playingNow && st === 'attack')) {
+        // Already the softest choice: a little quieter still, remembered for this loudness.
+        p = { ...p, trims: { ...p.trims, [st]: Math.max(-30, p.trims[st] - VOICE_TRIM_STEP) } }; changed = true;
+      } else if (!playingNow) {
+        st = st === 'normal' ? 'warning' : 'attack'; setState(st); saveQuietMode(st);
+      }
+      done.push(SAID.softer);
+    }
+    if (changed) { await saveProfile(p); setProfile(p); }
+    if (minutes !== null) { setTimer(String(minutes)); done.push(minutes ? `${minutes} min` : 'No timer'); }
+    const next = roomRecipes(p, st);
+    const now = playing === 'softer' ? 'softer' : 'comfort';
+    if (playingNow && softer && playing === 'comfort') await playSound('softer', { recipe: next.softer, crossfade: 2, minutes: minutes ?? undefined });
+    else if (playingNow && changed) await playSound(now, { recipe: next[now], crossfade: 2.5, minutes: minutes ?? undefined });
+    else if (playingNow && minutes !== null) scheduleSleep(minutes);
+    else if (play && !playingNow) { await playSound('comfort', { recipe: next.comfort, minutes: minutes ?? undefined }); return; }
+    if (!dark) say(done.length ? `${done.join(' · ')}.` : 'Nothing to change.');
+  };
 
   const worse = async () => {
     player.stop(1.5); setPlaying(null); setPreparing(false);
@@ -259,6 +339,7 @@ export default function QuietRoom() {
   );
   const lamp = (
     <Lamp size={lampSize} scene={scene} ring={ring} playing={playingNow} preparing={preparing} anchorRef={lampRef} focusRef={lampFocus} onLayout={measureLamp}
+      onHold={voiceOk === 'unsupported' ? undefined : hold} onRelease={release}
       onPress={() => (playingNow ? stopSound() : playSound('comfort'))} />
   );
   const statusLine = <Status sub={sub} worse={worseNote} live={worseNote ? 'assertive' : 'polite'} center={!wide}>{line}</Status>;
@@ -279,6 +360,8 @@ export default function QuietRoom() {
     </View>
   );
   const disclaimer = <Caption color={colors.ink3} center={!wide}>For comfort, not treatment. A sudden, new or worst-ever headache: get medical help.</Caption>;
+  // Phones that can listen offline: how to talk to it, in one quiet line.
+  const voiceHint = voiceOk === 'unsupported' ? null : <Meta center={!wide}>{listening ? 'Listening…' : 'Hold the lamp to speak · “softer”, “darker”, “stop”'}</Meta>;
   const checkInUp = !!checkFor && !playing;
   const checkIn = <CheckIn open={checkInUp} onAnswer={answer} onDismiss={dismissCheckIn} returnFocusRef={lampFocus} onHeight={setCheckInH} />;
   // Covered by the veil or the black: everything beneath is out of reach for touch, keys and screen readers.
@@ -288,7 +371,8 @@ export default function QuietRoom() {
     <>
       {wide ? null : checkIn}
       <DimVeil show={dimmed} onWake={armDim} ring={ring} anchor={anchor} lampSize={lampSize} caption={lampCaption} worseBar={false} />
-      <DarkScreen show={dark} onLeave={leaveDark} ring={ring} anchor={anchor} lampSize={lampSize} />
+      <DarkScreen show={dark} onLeave={leaveDark} ring={ring} anchor={anchor} lampSize={lampSize}
+        onHold={voiceOk === 'unsupported' ? undefined : hold} onRelease={release} />
       {setup ? <Onboarding profile={profile} onChange={p => { setProfile(p); saveProfile(p); }} onSaved={() => saveOnboarded(true)} onDone={finishSetup} /> : null}
     </>
   );
@@ -310,6 +394,7 @@ export default function QuietRoom() {
                 <Fade show={playingNow}><Button kind="rose" label="This is making it worse" icon="hand-left-outline" onPress={worse} haptic="always" /></Fade>
                 {checkIn}
                 <Hold show={!playingNow} style={styles.pillRow}><TimerPill short={timerShort} label={timerLabel} onPress={cycleTimer} /></Hold>
+                {voiceHint}
                 {disclaimer}
               </>} />
           ) : (
@@ -329,6 +414,7 @@ export default function QuietRoom() {
                 ) : null}
               </View>
               {escapes}
+              {voiceHint}
               {disclaimer}
             </>
           )}
@@ -337,6 +423,26 @@ export default function QuietRoom() {
     </View>
   );
 }
+
+/** Your recipe for a state, and a softer, darker version of it (never louder, never brighter). */
+type Recipe = ReturnType<typeof recipeFor>['recipe'];
+function roomRecipes(profile: Profile, state: State): { comfort: Recipe; softer: Recipe } {
+  const comfort = recipeFor(profile, state).recipe;
+  const softer = clampRecipe({ ...applyAdjustments(comfort, { tiltDbPerOct: comfort.tiltDbPerOct - 1.5, cutoffHz: comfort.cutoffHz * 0.6, swellDb: 0, levelOffsetDb: SOFTER_DB }), textureAmount: comfort.textureAmount * 0.5 }, state, comfort.levelDb) as Recipe;
+  return { comfort, softer };
+}
+
+// Voice: what each intent changes, one step at a time, and only ever gentler.
+const DIAL_FOR: Record<string, 'tone' | 'hum' | 'motion' | 'space'> = { darker: 'tone', 'less-hum': 'hum', stiller: 'motion', closer: 'space' };
+const SAID: Record<string, string> = { darker: 'Darker', 'less-hum': 'Less hum', stiller: 'Stiller', closer: 'Closer', softer: 'Softer', rain: 'Rain', ocean: 'Ocean', fan: 'Fan', hush: 'Hush', play: 'Playing' };
+const VOICE_TRIM_STEP = 3;   // dB, each "softer" once the sound is already the softer one
+/** Heard and done: one light tap. */
+const confirmTap = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); };
+/** Not understood: two soft taps, and nothing changes. */
+const notUnderstood = () => {
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft).catch(() => {});
+  setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft).catch(() => {}), 160);
+};
 
 /**
  * Cross-fades its controls out while sound plays and keeps their space, so the column never jumps.

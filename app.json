@@ -42,12 +42,19 @@
       [
         "expo-audio",
         {
-          "microphonePermission": false,
-          "recordAudioAndroid": false,
+          "microphonePermission": "Still listens only while you hold the lamp or the dark screen, so you can say “softer” or “stop”. Speech is recognised on your phone; no audio leaves it.",
+          "recordAudioAndroid": true,
           "enableBackgroundPlayback": true
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Still listens only while you hold the lamp or the dark screen, so you can say “softer” or “stop”. Speech is recognised on your phone; no audio leaves it.",
+          "speechRecognitionPermission": "Still turns what you say into a command (like “softer” or “stop”) on your phone. No audio leaves it."
+        }
+      ]
     ]
   }
 }

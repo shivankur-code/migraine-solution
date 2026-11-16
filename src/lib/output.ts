@@ -25,6 +25,9 @@ type Deck = {
 
 let deck: Deck | null = null;
 let modeReady = false;
+// While someone holds to talk, the sound dips (so the microphone hears them, and they know it is listening).
+let duckTo = 1, duckNow = 1;
+const DUCK_LEVEL = 0.3, DUCK_STEP = STEP_MS / 300;   // about 300 ms each way
 let generation = 0;
 
 async function ensureAudioMode() {
@@ -52,8 +55,9 @@ function tick(d: Deck) {
     if (k >= 1) { d.ramp = null; r.done?.(); }
   }
   if (d.rise) d.target = Math.min(1, dbToAmp(Math.min(d.rise.toDb, d.rise.fromDb + ((now - d.rise.start) / 1000) * d.rise.dbPerSecond)));
+  duckNow += Math.max(-DUCK_STEP, Math.min(DUCK_STEP, duckTo - duckNow));
   const [cur, next] = d.players;
-  const v = d.level * d.target;
+  const v = d.level * d.target * duckNow;
   if (!next) { setVolume(cur, v); return; }
   // Start the crossfade just before the audible copy reaches its end. The position is read about
   // once a second, and every tick only in the last few seconds.
@@ -137,3 +141,9 @@ export async function playRising(uri: string, fromDb: number, toDb: number, dbPe
   const levelNow = () => Math.min(toDb, fromDb + ((Date.now() - rise.start) / 1000) * dbPerSecond);
   return () => { const reached = levelNow(); stop(0.3); return reached; };
 }
+
+/** Dip the sound while someone holds to talk; back up when they let go. Smooth, about 300 ms. */
+export function duck(on: boolean) { duckTo = on ? DUCK_LEVEL : 1; }
+
+/** Put the playback settings back after the speech recogniser changed the audio session. */
+export async function restoreAudioMode() { modeReady = false; await ensureAudioMode(); }
