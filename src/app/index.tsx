@@ -43,7 +43,7 @@ const STATES: { value: State; label: string; icon: IconName; short: string }[] =
 const DEPTH: Record<State, Depth> = { attack: 2, warning: 1, recovering: 1, normal: 0 };
 const TIMERS = ['30', '60', '15', '0'];
 const AUTO_DIM_MS = 15000;
-const IDLE_LINE = 'Press when you are ready. It starts in silence.';
+const IDLE_LINE = 'It starts in silence.';
 
 export default function QuietRoom() {
   const [profile, setProfile] = useState<Profile>(freshProfile());
@@ -174,11 +174,11 @@ export default function QuietRoom() {
     }
     setPreparing(false);
     scheduleSleep(minutes ?? Number(timer));
-    if (!crossfade) say('Fading in. It keeps playing if you lock the phone.');
+    if (!crossfade) say('');
   };
 
   const stopSound = () => {
-    player.stop(3); setPlaying(null); setPreparing(false); say('Fading to silence.'); end();
+    player.stop(3); setPlaying(null); setPreparing(false); say(''); end();
     player.prewarm([recipes.comfort, recipes.softer], 8000); // get Softer ready again once things are quiet
   };
   const darkOnly = () => { track('dark_screen', { state }); player.stop(2); setPlaying(null); end({ ask: false }); setCheckFor(null); begin('silence', null); setDark(true); };
@@ -196,15 +196,12 @@ export default function QuietRoom() {
     const r = await startListening();
     if (r !== 'listening') {
       notUnderstood();
-      say(r === 'asked' ? 'Thank you. Now hold again and speak.'
-        : r === 'denied' ? 'Still cannot hear you: the microphone is off for Still in Settings.'
-        : r === 'offline-missing' ? 'Voice needs offline speech recognition, which this phone does not have yet.'
-        : 'Voice is not available on this device.');
+      say(r === 'asked' ? 'Now hold again to speak.' : r === 'denied' ? 'The microphone is off for Still in Settings.' : 'Voice isn’t available on this phone.');
       return;
     }
     listeningRef.current = true; setListening(true);
     player.duck(true); confirmTap();
-    if (!dark) say('Listening… let go when you are done.');
+    if (!dark) say('Listening…');
   };
   const release = async () => {
     if (!listeningRef.current) return;
@@ -213,7 +210,7 @@ export default function QuietRoom() {
     player.duck(false);
     let heard = understand(words);
     if (!heard.intents.length && heard.timer === null && words && profile.consentAI) heard = { ...(await askModel(words) ?? heard), layer: 3 };
-    if (!heard.intents.length && heard.timer === null) { notUnderstood(); if (!dark) say(words ? 'Not sure what you meant. Nothing changed.' : 'Did not catch that. Nothing changed.'); return; }
+    if (!heard.intents.length && heard.timer === null) { notUnderstood(); if (!dark) say(''); return; }
     track('voice', { intents: heard.intents.join(','), timer: heard.timer, layer: heard.layer });
     await applyVoice(heard.intents, heard.timer);
     confirmTap();
@@ -221,7 +218,7 @@ export default function QuietRoom() {
 
   const applyVoice = async (intents: string[], minutes: number | null) => {
     if (intents[0] === 'worse') { if (playingNow) await worse(); return; }
-    if (intents[0] === 'stop') { if (playing && playing !== 'silence') stopSound(); else say('Already quiet.'); return; }
+    if (intents[0] === 'stop') { if (playing && playing !== 'silence') stopSound(); return; }
     if (intents[0] === 'dark') { if (!dark) darkOnly(); return; }
     let p = profile, changed = false, softer = false, play = false;
     const done: string[] = [];
@@ -255,7 +252,7 @@ export default function QuietRoom() {
     else if (playingNow && changed) await playSound(now, { recipe: next[now], crossfade: 2.5, minutes: minutes ?? undefined });
     else if (playingNow && minutes !== null) scheduleSleep(minutes);
     else if (play && !playingNow) { await playSound('comfort', { recipe: next.comfort, minutes: minutes ?? undefined }); return; }
-    if (!dark) say(done.length ? `${done.join(' · ')}.` : 'Nothing to change.');
+    if (!dark) say(done.length ? `${done.join(' · ')}.` : '');
   };
 
   const worse = async () => {
@@ -270,8 +267,8 @@ export default function QuietRoom() {
     const deeper = toneNow > 0;
     const next = deeper ? { ...lowered.profile, tests: { ...lowered.profile.tests, ...DIALS.tone.tests(toneNow - 1) } } : lowered.profile;
     await saveProfile(next); setProfile(next);
-    const learnt = lowered.loweredDb && deeper ? ' Next time it will start quieter and a little deeper.' : lowered.loweredDb ? ' Next time it will start quieter.' : deeper ? ' Next time it will start a little deeper.' : '';
-    setStatus(`Stopped. Silence may be best right now.${learnt} If this headache is new or different, get medical advice.`);
+    const learnt = lowered.loweredDb || deeper ? ' Next time starts gentler.' : '';
+    setStatus(`Stopped.${learnt} New or different headache? See a doctor.`);
     setWorseNote(true); setBackedOff(true);
   };
 
@@ -291,7 +288,7 @@ export default function QuietRoom() {
   }, []);
 
   const changeState = (next: State) => {
-    if (playing || live.current) { player.stop(2); setPlaying(null); end({ ask: false }); say('Switched. Press play to hear it.'); }
+    if (playing || live.current) { player.stop(2); setPlaying(null); end({ ask: false }); say(''); }
     track('sound_change', { from: state, to: next });
     setState(next); saveQuietMode(next);
   };
@@ -316,13 +313,13 @@ export default function QuietRoom() {
   const mode = STATES.find(x => x.value === state)!;
   const timerShort = timer === '0' ? 'No timer' : timer === '60' ? '1 hour' : `${timer} min`;
   const timerLabel = timer === '0' ? 'Plays until you stop it' : `Fades out after ${timer === '60' ? '1 hour' : `${timer} minutes`}`;
-  const timerSub = timer === '0' ? 'plays until you stop it' : `fades after ${timer === '60' ? '1 hour' : `${timer} min`}`;
-  const lampCaption = preparing ? 'Getting ready…' : 'Tap to fade out';
+  const timerSub = timerShort.toLowerCase();
+  const lampCaption = preparing ? 'Getting ready…' : 'Fade out';
   const line = status || (playingNow ? '' : IDLE_LINE);
   const sub = playingNow ? `${textureName(current.texture)} · ${mode.label} · ${timerSub}` : undefined;
 
   // Saving the flag happens the moment setup ends (onSaved); this runs once the overlay has lifted.
-  const finishSetup = () => { setOnboarded(true); say('Your sound is ready. Press play when you need it.'); };
+  const finishSetup = () => { setOnboarded(true); say('Your sound is ready.'); };
 
   const header = (
     <View style={styles.header}>
@@ -347,21 +344,19 @@ export default function QuietRoom() {
   const loudness = (
     <Hold show={!playingNow} style={styles.loudness}>
       <Segmented options={STATES} value={state} onChange={changeState} label="Loudness" />
-      {helped ? <Caption color={colors.moss} center>{`${helped.sound} has helped you most.`}</Caption> : <Caption center>{mode.short}</Caption>}
     </Hold>
   );
   const escapes = (
     <View style={styles.escapes}>
       {/* Dark screen always stops the sound, so it may buzz; Softer only when it is the stop. */}
-      <Button icon="moon" label="Dark screen" sub="Silence" onPress={darkOnly} haptic="always" style={styles.escape} />
-      <Button icon="water-outline" label={playing === 'softer' ? 'Playing softer' : 'Softer'} sub="Quieter, darker" on={playing === 'softer'}
+      <Button icon="moon" label="Dark screen" onPress={darkOnly} haptic="always" style={styles.escape} />
+      <Button icon="water-outline" label={playing === 'softer' ? 'Playing softer' : 'Softer'} on={playing === 'softer'}
         haptic={playing === 'softer' ? 'always' : 'tap'}
         onPress={() => (playing === 'softer' ? stopSound() : playSound('softer'))} style={styles.escape} />
     </View>
   );
-  const disclaimer = <Caption color={colors.ink3} center={!wide}>For comfort, not treatment. A sudden, new or worst-ever headache: get medical help.</Caption>;
   // Phones that can listen offline: how to talk to it, in one quiet line.
-  const voiceHint = voiceOk === 'unsupported' ? null : <Meta center={!wide}>{listening ? 'Listening…' : 'Hold the lamp to speak · “softer”, “darker”, “stop”'}</Meta>;
+  const voiceHint = voiceOk === 'unsupported' ? null : <Meta center={!wide}>{listening ? 'Listening…' : 'Hold the lamp to speak'}</Meta>;
   const checkInUp = !!checkFor && !playing;
   const checkIn = <CheckIn open={checkInUp} onAnswer={answer} onDismiss={dismissCheckIn} returnFocusRef={lampFocus} onHeight={setCheckInH} />;
   // Covered by the veil or the black: everything beneath is out of reach for touch, keys and screen readers.
@@ -395,7 +390,6 @@ export default function QuietRoom() {
                 {checkIn}
                 <Hold show={!playingNow} style={styles.pillRow}><TimerPill short={timerShort} label={timerLabel} onPress={cycleTimer} /></Hold>
                 {voiceHint}
-                {disclaimer}
               </>} />
           ) : (
             <>
@@ -415,7 +409,6 @@ export default function QuietRoom() {
               </View>
               {escapes}
               {voiceHint}
-              {disclaimer}
             </>
           )}
         </View>
@@ -492,8 +485,9 @@ const styles = StyleSheet.create({
   header: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   pill: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 14, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.glassEdge, borderTopColor: colors.glassLit, backgroundColor: colors.glassFill },
   pillRow: { alignItems: 'flex-start' },
-  loudness: { gap: 10 },
+  // Tall enough for "This is making it worse", which takes this slot while sound plays.
+  loudness: { gap: 10, minHeight: 56, justifyContent: 'center' },
   escapes: { flexDirection: 'row', gap: 12 },
   worseSlot: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, justifyContent: 'center' },
-  escape: { flex: 1, minWidth: 0 },
+  escape: { flex: 1, minWidth: 0, paddingHorizontal: 12, gap: 8 },
 });

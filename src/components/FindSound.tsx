@@ -178,8 +178,7 @@ export function FindSound({ profile, onFound, onStart, header, saveLabel, onSave
       <View style={styles.words} accessibilityLiveRegion="polite" aria-live="polite">
         {phase === 'ready' ? (
           <>
-            <Body center color={colors.ink2} style={styles.lead}>It starts deep and slowly brightens, about 40 seconds. Tap anywhere the moment it feels like too much.</Body>
-            <Meta center>Eyes closed is fine · headphones help</Meta>
+            <Body center color={colors.ink2} style={styles.lead}>It slowly brightens. Tap when it’s too much.</Body>
           </>
         ) : phase === 'preparing' ? (
           <Meta center>Preparing your sound…</Meta>
@@ -192,7 +191,6 @@ export function FindSound({ profile, onFound, onStart, header, saveLabel, onSave
           <>
             <Kicker>Your sound</Kicker>
             <Title center>{STOPS[shownIndex]}</Title>
-            <Caption center>{chosen?.tapped ? (shownIndex === 0 ? 'The gentlest setting there is.' : 'One step gentler than where you tapped.') : 'No tap, so it stays warm and gentle.'}</Caption>
           </>
         )}
       </View>

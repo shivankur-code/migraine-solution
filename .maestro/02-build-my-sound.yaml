@@ -1,4 +1,4 @@
-# My sound: pick a texture, then "Let Still choose by ear" plays a pair and accepts a choice.
+# My sound: pick a texture, then "Compare two sounds" plays a pair and accepts a choice.
 appId: com.stillsoundlab.still
 name: Build my sound
 ---
@@ -16,10 +16,10 @@ name: Build my sound
 - tapOn: "Ocean"
 - takeScreenshot: 07-mixer
 - scrollUntilVisible:
-    element: "Let Still choose by ear"
+    element: "Compare two sounds"
     direction: DOWN
     centerElement: true
-- tapOn: "Let Still choose by ear"
+- tapOn: "Compare two sounds"
 - scrollUntilVisible:
     element: "Play A then B"
     direction: DOWN

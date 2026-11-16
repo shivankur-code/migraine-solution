@@ -36,7 +36,7 @@ export function Timeline({ episodes }: TimelineProps) {
   if (episodes.length === 0) {
     return (
       <View style={styles.empty}>
-        <Body color={colors.ink2}>Nothing yet. When a headache starts, open the Quiet room.</Body>
+        <Body color={colors.ink2}>Nothing yet.</Body>
         <Button kind="quiet" label="Open the quiet room" onPress={() => router.navigate('/')} style={styles.emptyButton} />
       </View>
     );
