@@ -16,7 +16,7 @@ const ANSWERS: { value: FollowUp; label: string }[] = [
   { value: 'worse', label: 'Worse' },
   { value: 'skipped', label: 'Skip' },
 ];
-const TITLE = 'Optional: how did that go?';
+const TITLE = 'How did that go?';
 /**
  * At least 236 pt of question; the sheet adds the floating tab bar's space beneath it (the bar draws
  * over that part, so no chip hides under it) and grows with large text rather than clipping.

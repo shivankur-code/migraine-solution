@@ -52,7 +52,6 @@ export default function MySound() {
       <View style={s.header}>
         <Kicker>My sound</Kicker>
         <Title accessibilityRole="header">Your sound</Title>
-        <Body color={colors.ink2}>Choose a texture, then find your sound by ear. Changes save by themselves.</Body>
       </View>
 
       <TextureTiles value={profile.intake.texture} onPick={t => {
@@ -64,13 +63,13 @@ export default function MySound() {
       {/* One instrument: find it by ear, and the dials beneath it turn along with the sound. Then nudge them by hand. */}
       <Card style={s.find}>
         <FindSound profile={profile} onFound={found} onStart={() => preview.stop()} size={tablet ? 220 : 200} idleFigure startLabel="Find it by ear"
-          header={<View style={s.findHead}><Heading>Find it by ear</Heading><Caption center>One tap, about 40 seconds. The dials below turn along with it.</Caption></View>}
+          header={<View style={s.findHead}><Heading>Find it by ear</Heading></View>}
           extraFoot={<PreviewButton compact on={preview.on} busy={preview.busy} onPress={() => preview.toggle(profile)} />}
           below={({ phase, index: driftAt }) => {
             const drifting = phase === 'drifting' || phase === 'preparing';
             return (
               <View style={s.byHand}>
-                <Eyebrow>{drifting ? 'Turning by itself' : 'Or by hand'}</Eyebrow>
+                {drifting ? null : <Eyebrow>By hand</Eyebrow>}
                 <View style={s.dials}>
                   {DIAL_KEYS.map(k => (
                     // While it drifts, all four turn together with the sound; afterwards they are yours.
@@ -90,15 +89,15 @@ export default function MySound() {
   const extras = (
     <>
       <Card style={s.rows}>
-        <Row icon="headset-outline" label="Let Still choose by ear" sub="Pick the calmer of two, a few times · 3 min"
+        <Row icon="headset-outline" label="Compare two sounds" sub="About 3 minutes"
           expanded={open === 'ear'} onPress={() => toggle('ear')}>
           <Tests profile={profile} onChange={update} keys={EAR_TESTS} />
         </Row>
-        <Row icon="sparkles-outline" label="Check my sound" sub="Instant, on this device · optional AI second opinion"
+        <Row icon="sparkles-outline" label="Check my sound"
           expanded={open === 'check' || wide} onPress={() => toggle('check')}>
           <AiReviewCard profile={profile} onChange={update} />
         </Row>
-        <Row icon="settings-outline" label="Account and privacy" sub="Optional sign-in, sharing"
+        <Row icon="settings-outline" label="Account and privacy"
           expanded={open === 'more' || wide} onPress={() => toggle('more')}>
           <AccountCard />
           <SharingCard />
@@ -106,7 +105,6 @@ export default function MySound() {
         </Row>
       </Card>
       <Button kind="quiet" icon="refresh-outline" label="Start over" onPress={startOver} />
-      <Caption color={colors.ink3}>Still is for comfort. It does not diagnose, treat or prevent migraine.</Caption>
     </>
   );
 

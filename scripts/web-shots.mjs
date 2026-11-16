@@ -169,12 +169,12 @@ async function run(name, viewport, { quick = false } = {}) {
     const findBtn = page.getByRole('button', { name: 'Find it by ear', exact: true }).locator('visible=true').first();
     await findBtn.scrollIntoViewIfNeeded();
     await findBtn.click();
-    await page.getByText('Turning by itself').locator('visible=true').first().waitFor({ timeout: 30000 });
-    await page.getByText('Turning by itself').locator('visible=true').first().scrollIntoViewIfNeeded();
+    await page.getByText('Tap when it’s too much.').locator('visible=true').first().waitFor({ timeout: 30000 });
+    await page.getByText('Tap when it’s too much.').locator('visible=true').first().scrollIntoViewIfNeeded();
     await shot('07b-my-sound-finding', 12000);
     // Tap the words, as a person would: the whole card is the target while it drifts.
     await page.getByText('Tap when it’s too much.').locator('visible=true').first().click();
-    await page.getByText('Or by hand').locator('visible=true').first().waitFor();
+    await page.getByText('By hand', { exact: true }).locator('visible=true').first().waitFor();
     await shot('07c-my-sound-found', 2500);
   }
   await tab('tab-journal', 'Journal').click();

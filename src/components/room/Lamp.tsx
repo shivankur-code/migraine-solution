@@ -121,7 +121,7 @@ export function Lamp({ size, scene, ring, playing, preparing, onPress, anchorRef
   onRelease?: () => void;
 }) {
   const label = preparing ? 'Getting ready' : playing ? 'Fade to silence' : 'Play my sound';
-  const caption = preparing ? 'Getting ready…' : playing ? 'Tap to fade out' : 'Play my sound';
+  const caption = preparing ? 'Getting ready…' : playing ? 'Fade out' : 'Play my sound';
   const disc = colors.scene[scene].floor[1];
   return (
     <View ref={anchorRef} onLayout={onLayout} style={{ width: size, height: size, alignSelf: 'center' }}>

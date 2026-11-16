@@ -15,12 +15,12 @@ import { FindSound } from '../FindSound';
 export type Preview = ReturnType<typeof usePreview>;
 
 /** Kicker, Title and one Body line, shared by panes 1 and 2. */
-export function PaneHeader({ kicker, title, sub }: { kicker: string; title: string; sub: string }) {
+export function PaneHeader({ kicker, title, sub }: { kicker: string; title: string; sub?: string }) {
   return (
     <View style={styles.header}>
       <Kicker>{kicker}</Kicker>
       <Title>{title}</Title>
-      <Body color={colors.ink2}>{sub}</Body>
+      {sub ? <Body color={colors.ink2}>{sub}</Body> : null}
     </View>
   );
 }
@@ -44,7 +44,7 @@ export function WelcomePane({ onStart, onSkip }: { onStart: () => void; onSkip: 
         </Hud>
         <Mark size={36} />
         <Display center>Still</Display>
-        <Body center color={colors.ink2} style={styles.welcomeBody}>A soft sound for migraine days. Made on your phone, just for you.</Body>
+        <Body center color={colors.ink2} style={styles.welcomeBody}>A soft sound for migraine days.</Body>
       </View>
       <Foot>
         <Button kind="primary" label="Make my sound" onPress={onStart} />
@@ -61,7 +61,7 @@ export function TexturePane({ profile, preview, onPick, onContinue }: {
 }) {
   return (
     <View style={styles.pane}>
-      <PaneHeader kicker="1 of 2" title="Pick what feels restful" sub="Tap one to hear it. Use headphones if you can." />
+      <PaneHeader kicker="1 of 2" title="Pick what feels restful" sub="Tap to hear it." />
       <TextureTiles value={profile.intake.texture} onPick={onPick} />
       <PreviewButton compact on={preview.on} busy={preview.busy} onPress={() => preview.toggle(profile)} />
       <Foot>
@@ -78,7 +78,7 @@ export function FindPane({ profile, onFound, onStart, onSave }: {
   return (
     <View style={styles.pane}>
       <FindSound profile={profile} onFound={onFound} onStart={onStart} saveLabel="Save my sound" onSave={onSave}
-        header={<PaneHeader kicker="2 of 2" title="Find your sound" sub="No dials. Just listen." />} />
+        header={<PaneHeader kicker="2 of 2" title="Find your sound" />} />
     </View>
   );
 }

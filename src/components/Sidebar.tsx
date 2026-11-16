@@ -12,7 +12,8 @@ import { Mark } from './Mark';
 import { PrivacySheet } from './PrivacySheet';
 import { chromeHidden, Material, NAV_ROUTES, webData } from './TabBar';
 
-const SUB: Record<string, string> = { index: 'Play your sound', journal: 'How it went', tune: 'Dials and textures' };
+// One word per room is enough: no sub-lines under the names.
+const SUB: Record<string, string> = {};
 const ICON: Record<string, IconName> = { index: 'moon-outline', journal: 'book-outline', tune: 'options-outline' };
 const filled = (name: IconName) => name.replace(/-outline$/, '') as IconName;
 
@@ -75,8 +76,7 @@ export function Sidebar({ state, descriptors, emitter, navigateToTab }: BottomTa
         </View>
       </View>
       <View style={styles.foot}>
-        <Caption>The sound is made in your browser. Nothing you choose leaves it.</Caption>
-        <Caption color={colors.ink3}>For comfort, not treatment.</Caption>
+        <Caption color={colors.ink3}>Nothing leaves your device.</Caption>
         <View style={styles.links}>
           {/* Opens a dialog, so it is a button; react-native-web only activates role="link" on a real anchor. */}
           <Press accessibilityLabel="Privacy" accessibilityHint="Opens the privacy policy" haptic={false} focusable={!hidden} onPress={() => setPrivacy(true)} style={styles.link} {...webData({ hover: 'link' })}>

@@ -81,7 +81,7 @@ export default function JournalScreen() {
           <View style={styles.heroText}>
             <Kicker>Journal</Kicker>
             <Title>Your journal</Title>
-            <Body color={colors.ink2}>{empty ? 'Still notes each time you use it. It stays on this device.' : `${days} · only on this device`}</Body>
+            <Body color={colors.ink2}>{empty ? 'Kept on this phone only.' : `${days} · only on this device`}</Body>
           </View>
           {/* The person's own figure, gathering on each visit. No frame: it floats on the glass light. */}
           <View style={styles.figure} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
@@ -98,10 +98,9 @@ export default function JournalScreen() {
         <Card style={styles.panel}>
           <Eyebrow>How it felt afterwards</Eyebrow>
           <Bars ready={loaded} rows={(Object.keys(FOLLOWS) as (keyof typeof FOLLOWS)[]).map(k => ({ key: k, label: FOLLOWS[k], count: m.followUps[k] || 0, color: BAR_COLORS[k] }))} />
-          <Caption color={colors.ink3}>Feeling better afterwards doesn't mean the sound caused it.</Caption>
+          <Caption color={colors.ink3}>Not proof the sound helped.</Caption>
           <View style={styles.rule} />
           <Heading>Headache without Still?</Heading>
-          <Caption>One tap, no details.</Caption>
           <View style={styles.chips}>
             <Chip fit label="Today" onPress={() => addMissed(0)} style={styles.chip} />
             <Chip fit label="Yesterday" onPress={() => addMissed(1)} style={styles.chip} />
