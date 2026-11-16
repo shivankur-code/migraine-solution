@@ -492,5 +492,5 @@ const styles = StyleSheet.create({
   loudness: { gap: 10, minHeight: 56, justifyContent: 'center' },
   escapes: { flexDirection: 'row', gap: 12 },
   worseSlot: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, justifyContent: 'center' },
-  escape: { flex: 1, minWidth: 0 },
+  escape: { flex: 1, minWidth: 0, paddingHorizontal: 12, gap: 8 },
 });
