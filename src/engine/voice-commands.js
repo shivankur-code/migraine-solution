@@ -21,6 +21,7 @@ export const INTENTS = [
 ];
 
 // Layer 1: the words a person is told about, matched as the whole utterance.
+/** @type {Record<string, string>} */
 const EXACT = {
   softer: 'softer', quieter: 'softer', darker: 'darker', deeper: 'darker',
   stop: 'stop', play: 'play', start: 'play', worse: 'worse',
@@ -32,6 +33,7 @@ const EXACT = {
 
 // Layer 2: phrases inside what was said. Checked in this order; earlier groups win when two match
 // (so "stop, it's worse" is "worse", and "turn it off" is "stop", not "dark").
+/** @type {[string, string[]][]} */
 const PHRASES = [
   ['worse', ['making it worse', 'makes it worse', 'its worse', 'it is worse', 'getting worse', 'worse now', 'this is worse', 'worse']],
   ['dark', ['dark screen', 'screen off', 'lights off', 'turn off the screen', 'black screen', 'too bright screen']],
@@ -85,17 +87,21 @@ export function minutesOf(intent) {
  * What was said, as intents. Returns { intents, timer, layer }: `layer` is 1 for exact command words,
  * 2 for everyday phrases, 0 when nothing was understood (layer 3 is the app's to try). At most one
  * texture and one of each change; "stop" or "worse" end the list, since nothing after them applies.
+ * @param {string} text
+ * @returns {{ intents: string[], timer: number | null, layer: number }}
  */
 export function understand(text) {
   const said = normalize(text);
   if (!said) return { intents: [], timer: null, layer: 0 };
   const timer = timerIn(said);
   if (EXACT[said]) return { intents: [EXACT[said]], timer: null, layer: 1 };
+  /** @type {string[]} */
   const found = [];
   for (const [intent, phrases] of PHRASES) {
     if (phrases.some(p => has(said, p))) found.push(intent);
   }
   // "Stop" inside a timer phrase ("stop after 20 minutes") is the timer, not a stop.
+  /** @type {string[]} */
   let intents = timer !== null ? found.filter(i => i !== 'stop' && !(i === 'softer' && /\b(less|down|lower)\b/.test(said) && !/too|quiet|soft/.test(said))) : found;
   // One texture at most: the first one named.
   const textures = intents.filter(i => ['rain', 'ocean', 'fan', 'hush'].includes(i));
