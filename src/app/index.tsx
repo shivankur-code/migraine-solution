@@ -355,7 +355,6 @@ export default function QuietRoom() {
         onPress={() => (playing === 'softer' ? stopSound() : playSound('softer'))} style={styles.escape} />
     </View>
   );
-  const disclaimer = <Caption color={colors.ink3} center={!wide}>Not a treatment. A new or severe headache needs a doctor.</Caption>;
   // Phones that can listen offline: how to talk to it, in one quiet line.
   const voiceHint = voiceOk === 'unsupported' ? null : <Meta center={!wide}>{listening ? 'Listening…' : 'Hold the lamp to speak'}</Meta>;
   const checkInUp = !!checkFor && !playing;
@@ -391,7 +390,6 @@ export default function QuietRoom() {
                 {checkIn}
                 <Hold show={!playingNow} style={styles.pillRow}><TimerPill short={timerShort} label={timerLabel} onPress={cycleTimer} /></Hold>
                 {voiceHint}
-                {disclaimer}
               </>} />
           ) : (
             <>
@@ -411,7 +409,6 @@ export default function QuietRoom() {
               </View>
               {escapes}
               {voiceHint}
-              {disclaimer}
             </>
           )}
         </View>
