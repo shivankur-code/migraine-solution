@@ -81,19 +81,23 @@ export const FREE_MODELS = ['baidu/ernie-5.5-flash-preview:free', 'dots-studio/d
 export const DEADLINE_MS = 50_000;
 
 /** One model on OpenRouter. */
-export function openRouterOne({ apiKey, model, fetchFn = fetch }: { apiKey: string; model: string; fetchFn?: typeof fetch }) {
+/** The JSON shape a model must answer in (the review by default; the voice endpoint passes its own). */
+export type AnswerFormat = { name: string; schema: unknown; maxTokens: number; title: string };
+const REVIEW_FORMAT: AnswerFormat = { name: 'sound_recipe_review', schema: REVIEW_SCHEMA, maxTokens: 8000, title: 'Still sound review' };
+
+export function openRouterOne({ apiKey, model, fetchFn = fetch, format = REVIEW_FORMAT }: { apiKey: string; model: string; fetchFn?: typeof fetch; format?: AnswerFormat }) {
   return async (system: string, user: string, signal?: AbortSignal): Promise<ModelReply> => {
     const res = await fetchFn('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST', signal,
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}`, 'X-Title': 'Still sound review' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}`, 'X-Title': format.title },
       body: JSON.stringify({
         model,
         messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
-        response_format: { type: 'json_schema', json_schema: { name: 'sound_recipe_review', strict: true, schema: REVIEW_SCHEMA } },
+        response_format: { type: 'json_schema', json_schema: { name: format.name, strict: true, schema: format.schema } },
         // Only providers that enforce the schema, and that do not store or train on the request.
         provider: { require_parameters: true, data_collection: 'deny' },
         reasoning: { effort: 'low', exclude: true },   // short thinking: most of the wait was reasoning
-        max_tokens: 8000,
+        max_tokens: format.maxTokens,
       }),
     });
     const body: any = await res.json().catch(() => ({}));
@@ -110,8 +114,8 @@ export function openRouterOne({ apiKey, model, fetchFn = fetch }: { apiKey: stri
  * the others are cancelled. Free models are often rate-limited or down, so racing them is what
  * makes the review fast and dependable. Throws the most telling error if none answers in time.
  */
-export function openRouterModel({ apiKey, models = FREE_MODELS, fetchFn = fetch, deadlineMs = DEADLINE_MS }: { apiKey: string; models?: string[]; fetchFn?: typeof fetch; deadlineMs?: number }): ReviewModel {
-  const askers = models.map(model => openRouterOne({ apiKey, model, fetchFn }));
+export function openRouterModel({ apiKey, models = FREE_MODELS, fetchFn = fetch, deadlineMs = DEADLINE_MS, format }: { apiKey: string; models?: string[]; fetchFn?: typeof fetch; deadlineMs?: number; format?: AnswerFormat }): ReviewModel {
+  const askers = models.map(model => openRouterOne({ apiKey, model, fetchFn, format }));
   return (system, user) => new Promise((resolve, reject) => {
     const stop = new AbortController();
     const timer = setTimeout(() => { stop.abort(); reject(new ProviderError(504, 'timeout')); }, deadlineMs);

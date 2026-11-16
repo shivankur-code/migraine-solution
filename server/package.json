@@ -6,7 +6,7 @@
   "main": "dist/server/src/functions/*.js",
   "scripts": {
     "build": "tsc",
-    "test": "npm run build && node --no-warnings dist/server/test/review.test.js",
+    "test": "npm run build && node --no-warnings dist/server/test/review.test.js && node --no-warnings dist/server/test/voice.test.js",
     "start": "func start"
   },
   "dependencies": {

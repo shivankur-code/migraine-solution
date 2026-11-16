@@ -15,12 +15,15 @@ import { coverData, coverNoRing, LampRing, RING_LEAVE_MS, useCoverFocus, useGhos
 const HINT_KEY = 'still.darkHintShown';
 const HINT_MS = 3000;
 
-export function DarkScreen({ show, onLeave, ring, anchor, lampSize }: {
+export function DarkScreen({ show, onLeave, ring, anchor, lampSize, onHold, onRelease }: {
   show: boolean;
   onLeave: () => void;
   ring: SharedValue<number>;
   anchor: LampAnchor | null;
   lampSize: number;
+  /** Hold anywhere to talk (phones); release ends listening. */
+  onHold?: () => void;
+  onRelease?: () => void;
 }) {
   const [mounted, setMounted] = useState(show);
   const [hint, setHint] = useState(false);
@@ -66,7 +69,8 @@ export function DarkScreen({ show, onLeave, ring, anchor, lampSize }: {
       accessibilityViewIsModal={show} {...coverData}>
       {show ? <StatusBar hidden /> : null}
       <Animated.View style={[StyleSheet.absoluteFill, styles.black, blackStyle]}>
-        <Pressable ref={blackRef as never} accessibilityRole="button" accessibilityLabel="Dark screen. Tap to come back." onPress={onLeave} style={[StyleSheet.absoluteFill, coverNoRing]} />
+        <Pressable ref={blackRef as never} accessibilityRole="button" accessibilityLabel="Dark screen. Tap to come back." onPress={onLeave}
+          onLongPress={onHold} delayLongPress={350} onPressOut={onRelease} style={[StyleSheet.absoluteFill, coverNoRing]} />
       </Animated.View>
       <View pointerEvents="none" style={StyleSheet.absoluteFill} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden>
         <LampRing size={size} opacity={ghost} style={place} />

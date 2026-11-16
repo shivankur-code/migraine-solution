@@ -121,3 +121,7 @@ export async function playRising(key: string, fromDb: number, toDb: number, dbPe
   const levelNow = () => Math.min(toDb, fromDb + ((Date.now() - started) / 1000) * dbPerSecond);
   return () => { const reached = levelNow(); stop(0.3); return reached; };
 }
+
+/** Voice is off on the web (see voice.web.ts); kept so both platforms share one player API. */
+export function duck(_on: boolean) {}
+export async function restoreAudioMode() {}

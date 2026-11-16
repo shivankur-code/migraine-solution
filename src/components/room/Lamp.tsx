@@ -99,7 +99,7 @@ export const coverData = Platform.OS === 'web' ? { dataSet: { stillCover: '1' } 
 /** No focus ring on a cover: a lamp-coloured outline round the whole viewport would flash as it dims. Inline, so it beats the shell's rule. */
 export const coverNoRing = (Platform.OS === 'web' ? { outlineStyle: 'none' } : null) as ViewStyle | null;
 
-export function Lamp({ size, scene, ring, playing, preparing, onPress, anchorRef, focusRef, onLayout, figure, live }: {
+export function Lamp({ size, scene, ring, playing, preparing, onPress, anchorRef, focusRef, onLayout, figure, live, onHold, onRelease }: {
   size: number;
   /** The room's scene; the disc takes its floor-bottom colour so it reads as part of the floor. */
   scene: SceneTexture;
@@ -116,6 +116,9 @@ export function Lamp({ size, scene, ring, playing, preparing, onPress, anchorRef
   figure?: Figure | null;
   /** Grains tremble and turn only while the sound plays and the screen is awake. */
   live?: boolean;
+  /** Hold to talk (phones): called after a long press, and on every release. */
+  onHold?: () => void;
+  onRelease?: () => void;
 }) {
   const label = preparing ? 'Getting ready' : playing ? 'Fade to silence' : 'Play my sound';
   const caption = preparing ? 'Getting ready…' : playing ? 'Tap to fade out' : 'Play my sound';
@@ -124,6 +127,7 @@ export function Lamp({ size, scene, ring, playing, preparing, onPress, anchorRef
     <View ref={anchorRef} onLayout={onLayout} style={{ width: size, height: size, alignSelf: 'center' }}>
       {/* Play or stop: the stop still buzzes while sound plays. A large lit surface: no reduced-motion dim. */}
       <Press ref={focusRef} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ busy: preparing }} onPress={onPress}
+        onLongPress={onHold} delayLongPress={350} onPressOut={onRelease}
         haptic="always" largeSurface
         style={{ width: size, height: size, borderRadius: size / 2, alignItems: 'center', justifyContent: 'center' }}>
         <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={StyleSheet.absoluteFill} {...svgHidden}>
