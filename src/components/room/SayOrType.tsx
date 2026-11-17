@@ -28,5 +28,5 @@ const styles = StyleSheet.create({
   // Focus shows on the rounded box (lamp edge), not as the browser's square outline inside it.
   wrapOn: { borderColor: colors.lampDeep },
   // 16 px keeps iOS Safari from zooming into the field.
-  input: { flex: 1, minWidth: 0, color: colors.ink, fontFamily: fonts.body, fontSize: 16, paddingVertical: 10, ...(Platform.OS === 'web' ? { outlineStyle: 'none' } as TextStyle : null) },
+  input: { flex: 1, minWidth: 0, color: colors.ink, fontFamily: fonts.body, fontSize: 16, paddingVertical: 10, ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as unknown as TextStyle) : null) },
 });
