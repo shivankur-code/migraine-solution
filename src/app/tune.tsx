@@ -86,7 +86,7 @@ export default function MySound() {
       </View>
 
       {voiceBar}
-      {voiceLine ? <Meta>{voiceLine}</Meta> : null}
+      {voiceLine ? <Body color={colors.ink2}>{voiceLine}</Body> : null}
 
       <TextureTiles value={profile.intake.texture} onPick={t => {
         const next = { ...profile, intake: { ...profile.intake, texture: t } };
