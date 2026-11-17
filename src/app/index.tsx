@@ -26,9 +26,7 @@ import { Cymatics } from '../components/Cymatics';
 import { CHECK_IN_HEIGHT, CheckIn } from '../components/room/CheckIn';
 import { DimVeil } from '../components/room/DimVeil';
 import { DarkScreen } from '../components/room/DarkScreen';
-import * as Haptics from 'expo-haptics';
-import { micBlocked, startListening, stopListening, voiceStatus, type VoiceStatus } from '../lib/voice';
-import { interpret } from '../lib/interpret';
+import { gentler, SAID, TEXTURE_FOR, useVoice } from '../lib/useVoice';
 import { SayOrType } from '../components/room/SayOrType';
 
 type Choice = Session['choice'];
@@ -185,77 +183,25 @@ export default function QuietRoom() {
   const leaveDark = () => { setDark(false); if (live.current?.choice === 'silence') end(); };
 
   // ---------------------------------------------------------------- voice: hold, speak, let go
-  // Nothing talks back: the answer is the sound changing, with one light tap (or two soft taps when
-  // it was not understood, and nothing changes). Three parts: ears (lib/voice, on-device only, per
-  // platform), the brain (lib/interpret: words, then an optional AI) and the hands (applyVoice).
-  // Browsers that cannot listen on the device get the "Say or type" box, which uses the same brain.
-  const [listening, setListening] = useState(false);
-  const listeningRef = useRef(false);
-  const [voiceOk, setVoiceOk] = useState<VoiceStatus>('unsupported');
-  useEffect(() => { let on = true; voiceStatus().then(s => { if (on) setVoiceOk(s); }).catch(() => {}); return () => { on = false; }; }, []);
-  const canHold = voiceOk === 'ready' || voiceOk === 'offline-missing' || voiceOk === 'maybe';
-  const hold = async () => {
-    if (listeningRef.current) return;
-    const r = await startListening();
-    if (r !== 'listening') {
-      notUnderstood();
-      if (r === 'installing') { setVoiceOk('ready'); say('Getting voice ready. Hold again in a moment.'); return; }
-      // This browser cannot listen on the device after all: offer the Say or type box instead.
-      if (r === 'unsupported') { setVoiceOk('unsupported'); say(Platform.OS === 'web' ? 'Voice isn’t available here. Type instead.' : 'Voice isn’t available here.'); return; }
-      say(r === 'asked' ? 'Now hold again to speak.' : r === 'denied' ? 'The microphone is off for Still.' : 'Voice isn’t available here.');
-      return;
-    }
-    listeningRef.current = true; setListening(true);
-    player.duck(true); confirmTap();
-    if (!dark) say('Listening…');
-  };
-  const release = async () => {
-    if (!listeningRef.current) return;
-    listeningRef.current = false; setListening(false);
-    const words = await stopListening();
-    player.duck(false);
-    if (micBlocked()) { notUnderstood(); say('The microphone is off for Still.'); return; }
-    await handleWords(words, 'voice');
-  };
-  /** Words from any ear (voice or the box) through the brain to the hands. */
-  const handleWords = async (words: string, from: 'voice' | 'typed') => {
-    const heard = await interpret(words, { consentAI: profile.consentAI });
-    if (!heard) { notUnderstood(); if (!dark) say(from === 'typed' ? 'Not sure what that means.' : ''); return; }
-    track('voice', { intents: heard.intents.join(','), timer: heard.timer, by: heard.by, from });
-    await applyVoice(heard.intents, heard.timer);
-    confirmTap();
-  };
-  // Computers: hold Space to talk, let go to apply (never while typing or on a focused control).
-  const holdRef = useRef(hold); holdRef.current = hold;
-  const releaseRef = useRef(release); releaseRef.current = release;
-  useEffect(() => {
-    if (Platform.OS !== 'web' || !canHold || typeof window === 'undefined') return;
-    const busy = (t: EventTarget | null) => !!(t as HTMLElement | null)?.closest?.('input, textarea, button, a, [role="button"], [role="tab"], [role="radio"], [role="slider"], [contenteditable="true"]');
-    const down = (e: KeyboardEvent) => { if (e.code !== 'Space' || e.repeat || busy(e.target)) return; e.preventDefault(); holdRef.current(); };
-    const up = (e: KeyboardEvent) => { if (e.code !== 'Space' || busy(e.target)) return; e.preventDefault(); releaseRef.current(); };
-    window.addEventListener('keydown', down); window.addEventListener('keyup', up);
-    return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); };
-  }, [canHold]);
+  // Nothing talks back: the answer is the sound changing (see lib/useVoice and design/voice.md).
+  // The room's hands are applyVoice; on the dark screen it stays silent and only taps.
+  const darkRef = useRef(dark); darkRef.current = dark;
+  const voice = useVoice({
+    consentAI: profile.consentAI,
+    apply: heard => applyVoice(heard.intents, heard.timer),
+    say: text => { if (!darkRef.current) say(text); },
+  });
+  const { canHold, listening, hold, release, handleWords } = voice;
 
   const applyVoice = async (intents: string[], minutes: number | null) => {
     if (intents[0] === 'worse') { if (playingNow) await worse(); return; }
     if (intents[0] === 'stop') { if (playing && playing !== 'silence') stopSound(); return; }
     if (intents[0] === 'dark') { if (!dark) darkOnly(); return; }
-    let p = profile, changed = false, softer = false, play = false;
-    const done: string[] = [];
-    for (const i of intents) {
-      const dial = DIAL_FOR[i];
-      if (dial) {
-        const at = DIALS[dial].index(recipeFor(p, 'normal').recipe);
-        if (at > 0) { p = { ...p, tests: { ...p.tests, ...DIALS[dial].tests(at - 1) } }; changed = true; done.push(SAID[i]); }
-        else done.push(AT_END[i]);   // already as gentle as it goes: say so, rather than nothing
-      } else if (i === 'rain' || i === 'ocean' || i === 'fan' || i === 'hush') {
-        const t: NonNullable<Profile['intake']['texture']> = i === 'hush' ? 'none' : i;
-        if (p.intake.texture !== t) { p = { ...p, intake: { ...p.intake, texture: t } }; changed = true; }
-        done.push(SAID[i]); if (!playingNow) play = true;
-      } else if (i === 'softer') softer = true;
-      else if (i === 'play') play = true;
-    }
+    const step = gentler(profile, intents);
+    let p = step.profile, changed = step.changed;
+    const done = step.done;
+    const softer = intents.includes('softer');
+    const play = intents.includes('play') || (!playingNow && intents.some(i => TEXTURE_FOR[i]));
     let st = state;
     if (softer) {
       if (playing === 'softer' || (!playingNow && st === 'attack')) {
@@ -451,18 +397,7 @@ function roomRecipes(profile: Profile, state: State): { comfort: Recipe; softer:
 }
 
 // Voice: what each intent changes, one step at a time, and only ever gentler.
-const DIAL_FOR: Record<string, 'tone' | 'hum' | 'motion' | 'space'> = { darker: 'tone', 'less-hum': 'hum', stiller: 'motion', closer: 'space' };
-const SAID: Record<string, string> = { darker: 'Darker', 'less-hum': 'Less hum', stiller: 'Stiller', closer: 'Closer', softer: 'Softer', rain: 'Rain', ocean: 'Ocean', fan: 'Fan', hush: 'Hush', play: 'Playing' };
-const AT_END: Record<string, string> = { darker: 'Already deepest', 'less-hum': 'No hum already', stiller: 'Already still', closer: 'Already closest' };
 const VOICE_TRIM_STEP = 3;   // dB, each "softer" once the sound is already the softer one
-/** Heard and done: one light tap. */
-const confirmTap = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); };
-/** Not understood: two soft taps, and nothing changes. */
-const notUnderstood = () => {
-  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft).catch(() => {});
-  setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft).catch(() => {}), 160);
-};
-
 /**
  * Cross-fades its controls out while sound plays and keeps their space, so the column never jumps.
  * Once faded the controls unmount: they leave the screen-reader and keyboard order too, because

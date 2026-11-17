@@ -175,6 +175,16 @@ async function run(name, viewport, { quick = false, on = browser } = {}) {
   await tab('tab-sound', 'My sound').click();
   await page.getByText('Your sound', { exact: true }).waitFor();
   await shot('07-my-sound', 3000);
+  // My sound takes the same words: a typed texture switches the texture and plays it.
+  {
+    const box = page.getByLabel('Say or type a change').locator('visible=true').first();
+    if (await box.count()) {
+      await box.fill('fan please');
+      await box.press('Enter');
+      await page.getByText('Fan.').locator('visible=true').first().waitFor({ timeout: 15000 });
+      await shot('07a-my-sound-typed', 1500);
+    }
+  }
   if (!quick) {
     // Find it by ear on My sound: the Tone dial turns along with the drift; then all four are free.
     const findBtn = page.getByRole('button', { name: 'Find it by ear', exact: true }).locator('visible=true').first();
