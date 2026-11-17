@@ -23,6 +23,8 @@ button, a, [role="button"], [role="tab"], [role="radio"], [role="link"] {
 /* Keyboard focus only: the ring never appears on a click or a tap. */
 :focus-visible { outline: 2px solid rgba(194,154,98,0.7); outline-offset: 3px; }
 :focus:not(:focus-visible) { outline: none; }
+/* A field inside a rounded box shows focus on the box itself (see SayOrType.tsx), not as a square inside it. */
+[data-field="pill"]:focus-visible { outline: none; }
 /* Hover lives only on devices that can hover, so a tap never leaves a stuck highlight. */
 @media (hover: hover) and (pointer: fine) {
   [data-hover="row"]:hover { background-color: rgba(255,255,255,0.04); }

@@ -4,7 +4,7 @@
 // On every screen it also checks the layout: no two visible controls, and no control and text, may sit
 // on top of each other (anything fully covered on purpose, like the room behind setup, is skipped).
 // Usage: node scripts/web-shots.mjs <base-url> <out-dir>
-import { chromium } from 'playwright';
+import { chromium, webkit } from 'playwright';
 import { mkdirSync } from 'node:fs';
 
 const [base = 'http://127.0.0.1:8080', out = 'web-shots'] = process.argv.slice(2);
@@ -72,8 +72,8 @@ async function overlaps(page, mode = 'rest') {
   }, mode);
 }
 
-async function run(name, viewport, { quick = false } = {}) {
-  const page = await browser.newPage({ viewport, deviceScaleFactor: 2 });
+async function run(name, viewport, { quick = false, on = browser } = {}) {
+  const page = await on.newPage({ viewport, deviceScaleFactor: 2 });
   page.on('pageerror', e => problems.push(`${name}: ${e.message}`));
   // A shader that fails to build only warns; treat it as a failure here.
   page.on('console', m => { if (m.type() === 'warning' && /ERROR: \d+:\d+/.test(m.text())) problems.push(`${name}: shader: ${m.text()}`); });
@@ -159,11 +159,33 @@ async function run(name, viewport, { quick = false } = {}) {
     await shot('05b-playing-scrolled', 800);
     await page.mouse.wheel(0, -600);
   }
+  // Browsers that cannot listen on the device show "Say or type": a typed command changes the sound.
+  {
+    const box = page.getByLabel('Say or type a change').locator('visible=true').first();
+    if (await box.count()) {
+      await box.scrollIntoViewIfNeeded();
+      await box.fill('more rain please');
+      await box.press('Enter');
+      await page.getByText('Rain.').locator('visible=true').first().waitFor({ timeout: 15000 });
+      await shot('05c-typed-command', 1500);
+    }
+  }
   await page.getByLabel('Fade to silence').click();
   await shot('06-faded', 3000);
   await tab('tab-sound', 'My sound').click();
   await page.getByText('Your sound', { exact: true }).waitFor();
   await shot('07-my-sound', 3000);
+  // My sound takes the same words: a typed texture switches the texture and plays it.
+  // Tabs stay loaded, so the Quiet room's box is in the page too (first); My sound's is the last one.
+  {
+    const box = page.getByLabel('Say or type a change').locator('visible=true').last();
+    if (await box.count()) {
+      await box.fill('fan please');
+      await box.press('Enter');
+      await page.getByText('Fan.').locator('visible=true').last().waitFor({ timeout: 15000 });
+      await shot('07a-my-sound-typed', 1500);
+    }
+  }
   if (!quick) {
     // Find it by ear on My sound: the Tone dial turns along with the drift; then all four are free.
     const findBtn = page.getByRole('button', { name: 'Find it by ear', exact: true }).locator('visible=true').first();
@@ -195,6 +217,11 @@ try {
   await run('phone-android', { width: 360, height: 780 }, { quick: true }); // a small Android phone
   await run('phone-max', { width: 430, height: 932 }, { quick: true });     // a large iPhone
   await run('desktop', { width: 1440, height: 900 });
+  // Safari's engine on an iPhone-sized screen: no on-device listening, so the room shows "Say or type".
+  // Optional: skipped (with a note) when WebKit could not be installed on the runner.
+  let safari = null;
+  try { safari = await webkit.launch(); } catch (e) { console.log(`WebKit not available, skipping the Safari run: ${String(e.message).split('\n')[0]}`); }
+  if (safari) { try { await run('iphone-safari', { width: 390, height: 844 }, { quick: true, on: safari }); } finally { await safari.close(); } }
 } finally {
   await browser.close();
 }

@@ -52,9 +52,16 @@ function start(key: string, loop: boolean, gainNow: number): Voice | null {
   const src = c.createBufferSource(), gain = c.createGain();
   src.buffer = b; src.loop = loop;
   gain.gain.setValueAtTime(gainNow, c.currentTime);
-  src.connect(gain).connect(meter(c));
+  src.connect(gain).connect(bus(c));
   src.start();
   return { src, gain };
+}
+
+// One shared gain before the meter: it dips the sound while someone holds to talk.
+let duckGain: GainNode | null = null;
+function bus(c: AudioContext): AudioNode {
+  if (!duckGain) { duckGain = c.createGain(); duckGain.connect(meter(c)); }
+  return duckGain;
 }
 
 // A meter between the sound and the speakers, so the screen can move with what is heard.
@@ -122,6 +129,12 @@ export async function playRising(key: string, fromDb: number, toDb: number, dbPe
   return () => { const reached = levelNow(); stop(0.3); return reached; };
 }
 
-/** Voice is off on the web (see voice.web.ts); kept so both platforms share one player API. */
-export function duck(_on: boolean) {}
+/** Dip the sound while someone holds to talk; back up when they let go (about 300 ms each way). */
+export function duck(on: boolean) {
+  if (!ctx || !duckGain) return;
+  const t = ctx.currentTime;
+  duckGain.gain.cancelScheduledValues(t);
+  duckGain.gain.setValueAtTime(duckGain.gain.value, t);
+  duckGain.gain.linearRampToValueAtTime(on ? 0.3 : 1, t + 0.3);
+}
 export async function restoreAudioMode() {}
