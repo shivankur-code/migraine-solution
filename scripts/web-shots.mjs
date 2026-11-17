@@ -176,12 +176,13 @@ async function run(name, viewport, { quick = false, on = browser } = {}) {
   await page.getByText('Your sound', { exact: true }).waitFor();
   await shot('07-my-sound', 3000);
   // My sound takes the same words: a typed texture switches the texture and plays it.
+  // Tabs stay loaded, so the Quiet room's box is in the page too (first); My sound's is the last one.
   {
-    const box = page.getByLabel('Say or type a change').locator('visible=true').first();
+    const box = page.getByLabel('Say or type a change').locator('visible=true').last();
     if (await box.count()) {
       await box.fill('fan please');
       await box.press('Enter');
-      await page.getByText('Fan.').locator('visible=true').first().waitFor({ timeout: 15000 });
+      await page.getByText('Fan.').locator('visible=true').last().waitFor({ timeout: 15000 });
       await shot('07a-my-sound-typed', 1500);
     }
   }
