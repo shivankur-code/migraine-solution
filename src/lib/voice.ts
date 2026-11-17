@@ -8,7 +8,7 @@ import { HINT_WORDS } from '../engine/voice-commands.js';
 import { restoreAudioMode } from './player';
 
 /** `asked`: permission was just granted; the system sheet took the hold, so hold again. */
-export type VoiceStatus = 'ready' | 'unsupported' | 'offline-missing' | 'denied' | 'asked' | 'installing';
+export type VoiceStatus = 'ready' | 'unsupported' | 'offline-missing' | 'denied' | 'asked' | 'installing' | 'maybe';
 
 /** Whether this phone can listen offline. Cheap; safe to call on every screen visit. */
 export async function voiceStatus(): Promise<VoiceStatus> {

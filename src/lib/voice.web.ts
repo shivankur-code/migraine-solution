@@ -4,7 +4,8 @@
 // browser cannot promise on-device recognition, voice stays off and the room offers its
 // "Say or type" box instead (on iPhone, the keyboard's own dictation is processed on the phone).
 // Same interface as voice.ts (phones), so the room does not care which ears it has.
-export type VoiceStatus = 'ready' | 'unsupported' | 'offline-missing' | 'denied' | 'asked' | 'installing';
+/** `maybe`: the browser has on-device mode, but we only ask whether English is there on the first hold. */
+export type VoiceStatus = 'ready' | 'unsupported' | 'offline-missing' | 'denied' | 'asked' | 'installing' | 'maybe';
 
 const LANG = 'en-US';
 type Rec = {
@@ -20,8 +21,16 @@ type RecCtor = {
 };
 const Ctor: RecCtor | undefined = typeof window === 'undefined' ? undefined : ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
 
-/** 'ready' only when the browser promises on-device recognition for English; 'offline-missing' when it can download it. */
+/**
+ * Cheap, on page load: 'maybe' when the browser offers on-device mode at all, else 'unsupported'.
+ * Nothing touches speech recognition until someone holds to talk (`check` runs then).
+ */
 export async function voiceStatus(): Promise<VoiceStatus> {
+  return Ctor && typeof Ctor.available === 'function' ? 'maybe' : 'unsupported';
+}
+
+/** 'ready' only when the browser promises on-device recognition for English; 'offline-missing' when it can download it. */
+async function check(): Promise<VoiceStatus> {
   if (!Ctor || typeof Ctor.available !== 'function') return 'unsupported';
   try {
     const a = await Ctor.available({ langs: [LANG], processLocally: true });
@@ -37,7 +46,7 @@ let ended: (() => void) | null = null;
 /** Finger (or Space) down. The first time, the browser downloads its English pack instead: hold again after. */
 export async function startListening(): Promise<VoiceStatus | 'listening'> {
   if (blocked) return 'denied';
-  const status = await voiceStatus();
+  const status = await check();
   if (status === 'offline-missing') {
     try { Ctor?.install?.({ langs: [LANG], processLocally: true }); } catch {}
     return 'installing';

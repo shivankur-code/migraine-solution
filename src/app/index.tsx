@@ -193,13 +193,15 @@ export default function QuietRoom() {
   const listeningRef = useRef(false);
   const [voiceOk, setVoiceOk] = useState<VoiceStatus>('unsupported');
   useEffect(() => { let on = true; voiceStatus().then(s => { if (on) setVoiceOk(s); }).catch(() => {}); return () => { on = false; }; }, []);
-  const canHold = voiceOk === 'ready' || voiceOk === 'offline-missing';
+  const canHold = voiceOk === 'ready' || voiceOk === 'offline-missing' || voiceOk === 'maybe';
   const hold = async () => {
     if (listeningRef.current) return;
     const r = await startListening();
     if (r !== 'listening') {
       notUnderstood();
       if (r === 'installing') { setVoiceOk('ready'); say('Getting voice ready. Hold again in a moment.'); return; }
+      // This browser cannot listen on the device after all: offer the Say or type box instead.
+      if (r === 'unsupported') { setVoiceOk('unsupported'); say(Platform.OS === 'web' ? 'Voice isn’t available here. Type instead.' : 'Voice isn’t available here.'); return; }
       say(r === 'asked' ? 'Now hold again to speak.' : r === 'denied' ? 'The microphone is off for Still.' : 'Voice isn’t available here.');
       return;
     }
