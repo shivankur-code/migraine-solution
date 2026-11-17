@@ -159,6 +159,17 @@ async function run(name, viewport, { quick = false } = {}) {
     await shot('05b-playing-scrolled', 800);
     await page.mouse.wheel(0, -600);
   }
+  // Browsers that cannot listen on the device show "Say or type": a typed command changes the sound.
+  {
+    const box = page.getByLabel('Say or type a change').locator('visible=true').first();
+    if (await box.count()) {
+      await box.scrollIntoViewIfNeeded();
+      await box.fill('it feels like a hairdryer');
+      await box.press('Enter');
+      await page.getByText('Darker.').locator('visible=true').first().waitFor({ timeout: 15000 });
+      await shot('05c-typed-command', 1500);
+    }
+  }
   await page.getByLabel('Fade to silence').click();
   await shot('06-faded', 3000);
   await tab('tab-sound', 'My sound').click();

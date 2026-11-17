@@ -8,10 +8,10 @@ import { HINT_WORDS } from '../engine/voice-commands.js';
 import { restoreAudioMode } from './player';
 
 /** `asked`: permission was just granted; the system sheet took the hold, so hold again. */
-export type VoiceStatus = 'ready' | 'unsupported' | 'offline-missing' | 'denied' | 'asked';
+export type VoiceStatus = 'ready' | 'unsupported' | 'offline-missing' | 'denied' | 'asked' | 'installing';
 
 /** Whether this phone can listen offline. Cheap; safe to call on every screen visit. */
-export function voiceStatus(): VoiceStatus {
+export async function voiceStatus(): Promise<VoiceStatus> {
   try {
     if (!ExpoSpeechRecognitionModule.isRecognitionAvailable()) return 'unsupported';
     return ExpoSpeechRecognitionModule.supportsOnDeviceRecognition() ? 'ready' : 'offline-missing';
@@ -25,7 +25,7 @@ const clear = () => { subs.forEach(s => { try { s.remove(); } catch {} }); subs 
 
 /** Start listening (finger down). Asks for the microphone the first time. */
 export async function startListening(): Promise<VoiceStatus | 'listening'> {
-  const status = voiceStatus();
+  const status = await voiceStatus();
   if (status !== 'ready') return status;
   try {
     const now = await ExpoSpeechRecognitionModule.getPermissionsAsync();
@@ -59,3 +59,6 @@ export function stopListening(): Promise<string> {
     setTimeout(finish, 1500);   // the final result normally arrives well before this
   });
 }
+
+/** The phone asks for the microphone itself (startListening returns 'denied'). */
+export const micBlocked = () => false;

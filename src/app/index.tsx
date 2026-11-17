@@ -27,9 +27,9 @@ import { CHECK_IN_HEIGHT, CheckIn } from '../components/room/CheckIn';
 import { DimVeil } from '../components/room/DimVeil';
 import { DarkScreen } from '../components/room/DarkScreen';
 import * as Haptics from 'expo-haptics';
-import { understand } from '../engine/voice-commands.js';
-import { startListening, stopListening, voiceStatus } from '../lib/voice';
-import { askModel } from '../lib/voiceAsk';
+import { micBlocked, startListening, stopListening, voiceStatus, type VoiceStatus } from '../lib/voice';
+import { interpret } from '../lib/interpret';
+import { SayOrType } from '../components/room/SayOrType';
 
 type Choice = Session['choice'];
 type Live = { id: string; at: string; state: State; choice: Choice; startMs: number; levelDb: number | null; worse: boolean };
@@ -186,17 +186,21 @@ export default function QuietRoom() {
 
   // ---------------------------------------------------------------- voice: hold, speak, let go
   // Nothing talks back: the answer is the sound changing, with one light tap (or two soft taps when
-  // it was not understood, and nothing changes). Phones only; the words are worked out on the phone,
-  // and only people who switched on AI (and are signed in) have leftovers sent, as text, to the model.
+  // it was not understood, and nothing changes). Three parts: ears (lib/voice, on-device only, per
+  // platform), the brain (lib/interpret: words, then an optional AI) and the hands (applyVoice).
+  // Browsers that cannot listen on the device get the "Say or type" box, which uses the same brain.
   const [listening, setListening] = useState(false);
   const listeningRef = useRef(false);
-  const [voiceOk] = useState(() => (Platform.OS === 'web' ? 'unsupported' : voiceStatus()));
+  const [voiceOk, setVoiceOk] = useState<VoiceStatus>('unsupported');
+  useEffect(() => { let on = true; voiceStatus().then(s => { if (on) setVoiceOk(s); }).catch(() => {}); return () => { on = false; }; }, []);
+  const canHold = voiceOk === 'ready' || voiceOk === 'offline-missing';
   const hold = async () => {
     if (listeningRef.current) return;
     const r = await startListening();
     if (r !== 'listening') {
       notUnderstood();
-      say(r === 'asked' ? 'Now hold again to speak.' : r === 'denied' ? 'The microphone is off for Still in Settings.' : 'Voice isn’t available on this phone.');
+      if (r === 'installing') { setVoiceOk('ready'); say('Getting voice ready. Hold again in a moment.'); return; }
+      say(r === 'asked' ? 'Now hold again to speak.' : r === 'denied' ? 'The microphone is off for Still.' : 'Voice isn’t available here.');
       return;
     }
     listeningRef.current = true; setListening(true);
@@ -208,13 +212,28 @@ export default function QuietRoom() {
     listeningRef.current = false; setListening(false);
     const words = await stopListening();
     player.duck(false);
-    let heard = understand(words);
-    if (!heard.intents.length && heard.timer === null && words && profile.consentAI) heard = { ...(await askModel(words) ?? heard), layer: 3 };
-    if (!heard.intents.length && heard.timer === null) { notUnderstood(); if (!dark) say(''); return; }
-    track('voice', { intents: heard.intents.join(','), timer: heard.timer, layer: heard.layer });
+    if (micBlocked()) { notUnderstood(); say('The microphone is off for Still.'); return; }
+    await handleWords(words, 'voice');
+  };
+  /** Words from any ear (voice or the box) through the brain to the hands. */
+  const handleWords = async (words: string, from: 'voice' | 'typed') => {
+    const heard = await interpret(words, { consentAI: profile.consentAI });
+    if (!heard) { notUnderstood(); if (!dark) say(from === 'typed' ? 'Not sure what that means.' : ''); return; }
+    track('voice', { intents: heard.intents.join(','), timer: heard.timer, by: heard.by, from });
     await applyVoice(heard.intents, heard.timer);
     confirmTap();
   };
+  // Computers: hold Space to talk, let go to apply (never while typing or on a focused control).
+  const holdRef = useRef(hold); holdRef.current = hold;
+  const releaseRef = useRef(release); releaseRef.current = release;
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !canHold || typeof window === 'undefined') return;
+    const busy = (t: EventTarget | null) => !!(t as HTMLElement | null)?.closest?.('input, textarea, button, a, [role="button"], [role="tab"], [role="radio"], [role="slider"], [contenteditable="true"]');
+    const down = (e: KeyboardEvent) => { if (e.code !== 'Space' || e.repeat || busy(e.target)) return; e.preventDefault(); holdRef.current(); };
+    const up = (e: KeyboardEvent) => { if (e.code !== 'Space' || busy(e.target)) return; e.preventDefault(); releaseRef.current(); };
+    window.addEventListener('keydown', down); window.addEventListener('keyup', up);
+    return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); };
+  }, [canHold]);
 
   const applyVoice = async (intents: string[], minutes: number | null) => {
     if (intents[0] === 'worse') { if (playingNow) await worse(); return; }
@@ -336,7 +355,7 @@ export default function QuietRoom() {
   );
   const lamp = (
     <Lamp size={lampSize} scene={scene} ring={ring} playing={playingNow} preparing={preparing} anchorRef={lampRef} focusRef={lampFocus} onLayout={measureLamp}
-      onHold={voiceOk === 'unsupported' ? undefined : hold} onRelease={release}
+      onHold={canHold ? hold : undefined} onRelease={release}
       onPress={() => (playingNow ? stopSound() : playSound('comfort'))} />
   );
   const statusLine = <Status sub={sub} worse={worseNote} live={worseNote ? 'assertive' : 'polite'} center={!wide}>{line}</Status>;
@@ -356,7 +375,10 @@ export default function QuietRoom() {
     </View>
   );
   // Phones that can listen offline: how to talk to it, in one quiet line.
-  const voiceHint = voiceOk === 'unsupported' ? null : <Meta center={!wide}>{listening ? 'Listening…' : 'Hold the lamp to speak'}</Meta>;
+  // Ways to talk to it: hold (where the device listens privately), or the box (web, everywhere else).
+  const voiceHint = canHold
+    ? <Meta center={!wide}>{listening ? 'Listening…' : wide ? 'Hold the lamp or Space to speak' : 'Hold the lamp to speak'}</Meta>
+    : Platform.OS === 'web' ? <SayOrType onWords={w => handleWords(w, 'typed')} /> : null;
   const checkInUp = !!checkFor && !playing;
   const checkIn = <CheckIn open={checkInUp} onAnswer={answer} onDismiss={dismissCheckIn} returnFocusRef={lampFocus} onHeight={setCheckInH} />;
   // Covered by the veil or the black: everything beneath is out of reach for touch, keys and screen readers.
@@ -367,7 +389,7 @@ export default function QuietRoom() {
       {wide ? null : checkIn}
       <DimVeil show={dimmed} onWake={armDim} ring={ring} anchor={anchor} lampSize={lampSize} caption={lampCaption} worseBar={false} />
       <DarkScreen show={dark} onLeave={leaveDark} ring={ring} anchor={anchor} lampSize={lampSize}
-        onHold={voiceOk === 'unsupported' ? undefined : hold} onRelease={release} />
+        onHold={canHold ? hold : undefined} onRelease={release} />
       {setup ? <Onboarding profile={profile} onChange={p => { setProfile(p); saveProfile(p); }} onSaved={() => saveOnboarded(true)} onDone={finishSetup} /> : null}
     </>
   );
