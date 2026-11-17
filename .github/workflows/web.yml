@@ -51,6 +51,9 @@ jobs:
           # mirrors, which are sometimes unreachable from runners. Try them, but don't fail the build on them.
           npx playwright install-deps chromium || echo "::warning::Could not install the browser's extra system packages; continuing"
           npx playwright install chromium
+          # Safari's engine too (best effort): the screenshots then include what iPhone visitors see.
+          npx playwright install-deps webkit || echo "::warning::Could not install WebKit's system packages; the Safari run may be skipped"
+          npx playwright install webkit || echo "::warning::Could not install WebKit; the Safari run will be skipped"
           (python3 -m http.server 8080 --directory dist-web >/dev/null 2>&1 &)
           sleep 2
           node scripts/web-shots.mjs http://127.0.0.1:8080 web-shots

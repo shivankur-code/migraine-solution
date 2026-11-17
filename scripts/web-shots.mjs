@@ -4,7 +4,7 @@
 // On every screen it also checks the layout: no two visible controls, and no control and text, may sit
 // on top of each other (anything fully covered on purpose, like the room behind setup, is skipped).
 // Usage: node scripts/web-shots.mjs <base-url> <out-dir>
-import { chromium } from 'playwright';
+import { chromium, webkit } from 'playwright';
 import { mkdirSync } from 'node:fs';
 
 const [base = 'http://127.0.0.1:8080', out = 'web-shots'] = process.argv.slice(2);
@@ -72,8 +72,8 @@ async function overlaps(page, mode = 'rest') {
   }, mode);
 }
 
-async function run(name, viewport, { quick = false } = {}) {
-  const page = await browser.newPage({ viewport, deviceScaleFactor: 2 });
+async function run(name, viewport, { quick = false, on = browser } = {}) {
+  const page = await on.newPage({ viewport, deviceScaleFactor: 2 });
   page.on('pageerror', e => problems.push(`${name}: ${e.message}`));
   // A shader that fails to build only warns; treat it as a failure here.
   page.on('console', m => { if (m.type() === 'warning' && /ERROR: \d+:\d+/.test(m.text())) problems.push(`${name}: shader: ${m.text()}`); });
@@ -206,6 +206,11 @@ try {
   await run('phone-android', { width: 360, height: 780 }, { quick: true }); // a small Android phone
   await run('phone-max', { width: 430, height: 932 }, { quick: true });     // a large iPhone
   await run('desktop', { width: 1440, height: 900 });
+  // Safari's engine on an iPhone-sized screen: no on-device listening, so the room shows "Say or type".
+  // Optional: skipped (with a note) when WebKit could not be installed on the runner.
+  let safari = null;
+  try { safari = await webkit.launch(); } catch (e) { console.log(`WebKit not available, skipping the Safari run: ${String(e.message).split('\n')[0]}`); }
+  if (safari) { try { await run('iphone-safari', { width: 390, height: 844 }, { quick: true, on: safari }); } finally { await safari.close(); } }
 } finally {
   await browser.close();
 }
