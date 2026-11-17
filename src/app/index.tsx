@@ -248,6 +248,7 @@ export default function QuietRoom() {
       if (dial) {
         const at = DIALS[dial].index(recipeFor(p, 'normal').recipe);
         if (at > 0) { p = { ...p, tests: { ...p.tests, ...DIALS[dial].tests(at - 1) } }; changed = true; done.push(SAID[i]); }
+        else done.push(AT_END[i]);   // already as gentle as it goes: say so, rather than nothing
       } else if (i === 'rain' || i === 'ocean' || i === 'fan' || i === 'hush') {
         const t: NonNullable<Profile['intake']['texture']> = i === 'hush' ? 'none' : i;
         if (p.intake.texture !== t) { p = { ...p, intake: { ...p.intake, texture: t } }; changed = true; }
@@ -452,6 +453,7 @@ function roomRecipes(profile: Profile, state: State): { comfort: Recipe; softer:
 // Voice: what each intent changes, one step at a time, and only ever gentler.
 const DIAL_FOR: Record<string, 'tone' | 'hum' | 'motion' | 'space'> = { darker: 'tone', 'less-hum': 'hum', stiller: 'motion', closer: 'space' };
 const SAID: Record<string, string> = { darker: 'Darker', 'less-hum': 'Less hum', stiller: 'Stiller', closer: 'Closer', softer: 'Softer', rain: 'Rain', ocean: 'Ocean', fan: 'Fan', hush: 'Hush', play: 'Playing' };
+const AT_END: Record<string, string> = { darker: 'Already deepest', 'less-hum': 'No hum already', stiller: 'Already still', closer: 'Already closest' };
 const VOICE_TRIM_STEP = 3;   // dB, each "softer" once the sound is already the softer one
 /** Heard and done: one light tap. */
 const confirmTap = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); };

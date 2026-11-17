@@ -164,9 +164,9 @@ async function run(name, viewport, { quick = false, on = browser } = {}) {
     const box = page.getByLabel('Say or type a change').locator('visible=true').first();
     if (await box.count()) {
       await box.scrollIntoViewIfNeeded();
-      await box.fill('it feels like a hairdryer');
+      await box.fill('more rain please');
       await box.press('Enter');
-      await page.getByText('Darker.').locator('visible=true').first().waitFor({ timeout: 15000 });
+      await page.getByText('Rain.').locator('visible=true').first().waitFor({ timeout: 15000 });
       await shot('05c-typed-command', 1500);
     }
   }
