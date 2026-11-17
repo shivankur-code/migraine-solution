@@ -17,6 +17,7 @@ export function SayOrType({ onWords }: { onWords: (text: string) => void }) {
         placeholder="Say or type: softer, darker, stop…" placeholderTextColor={colors.ink3}
         accessibilityLabel="Say or type a change" autoCorrect={false} autoCapitalize="none" maxLength={200}
         onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
+        {...({ dataSet: { field: 'pill' } } as object)}
         style={styles.input} />
     </View>
   );
@@ -26,7 +27,7 @@ const styles = StyleSheet.create({
   wrap: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48, paddingHorizontal: 16, borderRadius: 999,
     borderWidth: 1, borderColor: colors.glassEdge, backgroundColor: colors.glassFill },
   // Focus shows on the rounded box (lamp edge), not as the browser's square outline inside it.
-  wrapOn: { borderColor: colors.lampDeep },
+  wrapOn: { borderColor: colors.lamp },
   // 16 px keeps iOS Safari from zooming into the field.
   input: { flex: 1, minWidth: 0, color: colors.ink, fontFamily: fonts.body, fontSize: 16, paddingVertical: 10, ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as unknown as TextStyle) : null) },
 });
