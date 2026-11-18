@@ -51,8 +51,7 @@ export async function interpretWords(model: ReviewModel, text: string): Promise<
   } catch { return 'none'; }
 }
 
-const SUPABASE_URL = process.env.SUPABASE_URL || '';
-const SUPABASE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || '';
+import { SUPABASE_KEY, SUPABASE_URL } from './supabase.js';
 
 /** The signed-in person's id, or why not. Anonymous sessions do not count. */
 export async function whoIs(authorization: string | null, { url = SUPABASE_URL, key = SUPABASE_KEY, fetcher = fetch }: { url?: string; key?: string; fetcher?: typeof fetch } = {}): Promise<{ id: string } | 'unauthorized' | 'unavailable'> {
