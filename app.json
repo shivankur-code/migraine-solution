@@ -54,6 +54,12 @@
           "microphonePermission": "Still listens only while you hold the lamp or the dark screen, so you can say “softer” or “stop”. Speech is recognised on your phone; no audio leaves it.",
           "speechRecognitionPermission": "Still turns what you say into a command (like “softer” or “stop”) on your phone. No audio leaves it."
         }
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "Only if you turn it on: Still reads air pressure on your phone, so a day with falling pressure can start your sound a little gentler. Nothing is sent."
+        }
       ]
     ]
   }

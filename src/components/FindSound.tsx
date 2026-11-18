@@ -20,6 +20,7 @@ import { Body, Button, Caption, Heading, Kicker, Meta, Press, Title } from '../l
 import { track } from '../lib/activity';
 import { Cymatics } from './Cymatics';
 import { DIALS, withDial } from './Studio';
+import { DRIFT } from '../recipe/dials.js';
 
 const STOPS = DIALS.tone.stops;            // Deepest … Airy
 const N = STOPS.length;
@@ -33,12 +34,7 @@ const UNTOUCHED = 2;                        // no tap at all: keep "Warm", the g
  * hint, in the last two steps (in our comfort test a hum made the sound less pleasant, so it belongs
  * at the "too much" end), and never for someone who said they dislike hums.
  */
-export const DRIFT = {
-  tone:   [0, 1, 2, 3, 4, 5, 6],   // Deepest, Deep, Warm, Soft, Clear, Bright, Airy
-  motion: [0, 0, 1, 1, 2, 2, 3],   // Still, Drift, Tide, Breathe
-  space:  [0, 1, 1, 2, 3, 3, 4],   // Centred, Close, Natural, Open, Wide
-  hum:    [0, 0, 0, 0, 0, 1, 1],   // None, A hint
-} as const;
+export { DRIFT };
 export type DriftDial = keyof typeof DRIFT;
 const hatesHum = (p: Profile) => (p.intake.dislikes || []).includes('hum');
 /** Where a dial sits at a step of the drift, for this person. */
@@ -116,7 +112,9 @@ export function FindSound({ profile, onFound, onStart, header, saveLabel, onSave
     if (tapped) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     track('find_sound', { tappedAt: tapped ? indexRef.current : null, kept: i });
     playAt(i, 1.5).catch(() => {});
-    onFound(stepsRef.current[i]);
+    // The tapped step is the top of this person's range: suggestions never reach it (recipe/personal.js).
+    const found = stepsRef.current[i];
+    onFound(tapped ? { ...found, ceiling: { step: indexRef.current, at: new Date().toISOString() } } : found);
   }, [onFound]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const start = useCallback(async () => {

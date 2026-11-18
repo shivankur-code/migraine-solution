@@ -10,6 +10,7 @@ import { Tests } from '../components/build/Tests';
 import { PreviewButton, ProfileDial, TextureTiles, usePreview } from '../components/Studio';
 import { driftStop, FindSound } from '../components/FindSound';
 import { AiReviewCard } from '../components/AiReviewCard';
+import { ContextCard } from '../components/ContextCard';
 import { SupportCard } from '../components/SupportCard';
 import { AccountCard, SharingCard } from '../components/AccountCard';
 import { Body, Button, Caption, Card, Columns, confirmAction, Eyebrow, Heading, Ionicons, Kicker, Meta, Press, Row, Screen, Title, useTablet, useWide } from '../lib/ui';
@@ -23,7 +24,7 @@ const DIAL_KEYS = ['tone', 'hum', 'motion', 'space'] as const;
 
 export default function MySound() {
   const [profile, setProfile] = useState<Profile>(freshProfile());
-  const [open, setOpen] = useState<'ear' | 'more' | 'dials' | 'check' | null>(null);
+  const [open, setOpen] = useState<'ear' | 'more' | 'dials' | 'check' | 'context' | null>(null);
   const preview = usePreview();
   const wide = useWide();
   const tablet = useTablet();
@@ -76,7 +77,7 @@ export default function MySound() {
     router.navigate('/');
   });
 
-  const toggle = (k: 'ear' | 'more' | 'dials' | 'check') => { preview.stop(); if (open !== k) track('step_open', { step: k }); setOpen(open === k ? null : k); };
+  const toggle = (k: 'ear' | 'more' | 'dials' | 'check' | 'context') => { preview.stop(); if (open !== k) track('step_open', { step: k }); setOpen(open === k ? null : k); };
 
   const mixer = (
     <>
@@ -130,6 +131,10 @@ export default function MySound() {
         <Row icon="sparkles-outline" label="Check my sound"
           expanded={open === 'check' || wide} onPress={() => toggle('check')}>
           <AiReviewCard profile={profile} onChange={update} />
+        </Row>
+        <Row icon="partly-sunny-outline" label="Time of day and air pressure"
+          expanded={open === 'context' || wide} onPress={() => toggle('context')}>
+          <ContextCard profile={profile} onChange={update} />
         </Row>
         <Row icon="settings-outline" label="Account and privacy"
           expanded={open === 'more' || wide} onPress={() => toggle('more')}>
