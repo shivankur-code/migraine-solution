@@ -21,8 +21,7 @@ function pickModel(): ReviewModel | null {
 }
 const model = pickModel();
 
-const SUPABASE_URL = process.env.SUPABASE_URL || '';
-const SUPABASE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || '';
+import { SUPABASE_KEY, SUPABASE_URL } from '../supabase.js';
 
 /** 'ok' when Supabase accepts the token and the person has reviews left today. */
 export async function claimReview(authorization: string | null, { url = SUPABASE_URL, key = SUPABASE_KEY, fetcher = fetch }: { url?: string; key?: string; fetcher?: typeof fetch } = {}): Promise<'ok' | 'unauthorized' | 'limit' | 'unavailable'> {

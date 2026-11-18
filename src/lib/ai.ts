@@ -41,6 +41,7 @@ export async function requestReview(profile: Profile, journal: Journal, draft?: 
     if (res.status === 401) throw new ReviewError('Your sign-in has expired. Sign in again under Account.');
     if (res.status === 429) throw new ReviewError('You have used today\'s 5 reviews. Try again tomorrow.');
     if (res.status === 504) throw new ReviewError('The AI took too long. Your on-device check is applied; try the AI again later.');
+    if (res.status === 503) throw new ReviewError('The AI review is not available right now. Your on-device check is applied.');
     if (!res.ok) throw new Error(`status-${res.status}`);
     const clean = mergeWithDraft(sanitizeReview(await res.json()), draft ?? null);
     return { at: new Date().toISOString(), source: 'ai', ...clean, adjustments: clean.adjustments as unknown as Record<string, unknown> };

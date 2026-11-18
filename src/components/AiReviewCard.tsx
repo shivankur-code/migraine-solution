@@ -6,7 +6,7 @@ import type { AiReview, Profile } from '../lib/profile';
 import { aiAvailable, deviceReview, requestReview, reviewPayload, ReviewError } from '../lib/ai';
 import { loadJournal } from '../lib/storage';
 import { track } from '../lib/activity';
-import { Body, Button, Caption, Control } from '../lib/ui';
+import { Body, Button, Caption, Chip, Control } from '../lib/ui';
 import { colors } from '../lib/theme';
 import { switchColors } from './AccountCard';
 
@@ -53,7 +53,19 @@ export function AiReviewCard({ profile, onChange }: { profile: Profile; onChange
           {r.summary ? <Body>{r.summary}</Body> : null}
           {r.rationale.map((x, i) => <Text key={i} style={styles.line}>{`${NAMES[x.param] || x.param}: ${x.why}`}</Text>)}
           {(r.cautions || []).map((c, i) => <Text key={`c${i}`} style={[styles.line, { color: colors.ink }]}>{c}</Text>)}
-          {(r.questions || []).map((q, i) => <Text key={`q${i}`} style={styles.line}>{`? ${q}`}</Text>)}
+          {(r.questions || []).length ? <Caption style={styles.forYou}>For you</Caption> : null}
+          {(r.questions || []).map((q, i) => (
+            <View key={`q${i}`} style={styles.question}>
+              <Text style={styles.line}>{q}</Text>
+              {/* A question you can answer in one tap, where the answer means a change. */}
+              {/^You usually stop within/.test(q) ? (
+                <View style={styles.answers}>
+                  <Chip fit label="Too much" onPress={() => { onChange({ ...profile, baseLevelDb: Math.max(-40, profile.baseLevelDb - 3) }); track('review_answer', { answer: 'too-much' }); setNote('Thanks. It now starts a little quieter.'); }} style={styles.answer} />
+                  <Chip fit label="I feel better" onPress={() => { track('review_answer', { answer: 'better' }); setNote('Good to know. Nothing changes.'); }} style={styles.answer} />
+                </View>
+              ) : null}
+            </View>
+          ))}
           {changed.length ? <Button kind="quiet" label="Undo these changes" onPress={() => { onChange({ ...profile, aiReview: null }); setNote('Back to your sound before the check.'); }} /> : null}
         </View>
       ) : null}
@@ -84,4 +96,8 @@ const styles = StyleSheet.create({
   },
   result: { gap: 8, borderLeftWidth: 2, borderLeftColor: colors.lampDeep, paddingLeft: 12 },
   line: { color: colors.ink2, fontSize: 14, lineHeight: 20 },
+  forYou: { marginTop: 4 },
+  question: { gap: 8 },
+  answers: { flexDirection: 'row', gap: 8 },
+  answer: { flex: 1, paddingHorizontal: 8 },
 });
