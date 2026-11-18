@@ -45,7 +45,7 @@ export function AiReviewCard({ profile, onChange }: { profile: Profile; onChange
 
   return (
     <View style={styles.card}>
-      <Caption>Looks at your answers, tests and journal and makes small changes if they would help. It can never make the sound louder or harsher.</Caption>
+      <Caption>Looks at your answers, tests and journal and makes small changes if they would help: gentler or brighter, always within your own range, never louder.</Caption>
       <Button label={busy ? 'The AI is looking…' : 'Check my sound'} onPress={check} disabled={busy} testID="check-sound" />
       {r ? (
         <View style={styles.result} testID="review-result">

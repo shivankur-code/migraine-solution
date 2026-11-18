@@ -21,6 +21,7 @@
     "expo-linear-gradient": "~58.0.3",
     "expo-linking": "~58.0.16",
     "expo-router": "~58.0.30",
+    "expo-sensors": "~58.0.5",
     "expo-speech-recognition": "~58.0.1",
     "expo-status-bar": "~58.0.4",
     "expo-system-ui": "~58.0.7",
@@ -46,7 +47,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "typecheck": "tsc --noEmit",
-    "test": "node --no-warnings tests/engine.test.mjs && node --no-warnings tests/journal.test.mjs && node --no-warnings tests/recipe.test.mjs && node --no-warnings tests/cymatics.test.mjs && node --no-warnings tests/voice.test.mjs"
+    "test": "node --no-warnings tests/engine.test.mjs && node --no-warnings tests/journal.test.mjs && node --no-warnings tests/recipe.test.mjs && node --no-warnings tests/cymatics.test.mjs && node --no-warnings tests/voice.test.mjs && node --no-warnings tests/personal.test.mjs"
   },
   "private": true
 }

@@ -45,7 +45,18 @@ export function quickReview(req) {
   if ((bother.pulse ?? 0) >= 3 && (r.swellDb ?? 0) > 0.5) change('swellDb', 0, 'The gentle rise and fall is now off, since pulsing sounds bother you.', ['virjonen2019']);
   if ((i.dizzy || i.motionSensitive) && (r.width ?? 0) > 0.6) change('width', 0.5, 'The sound now sits closer to the centre, which can feel steadier when you are dizzy or sensitive to motion.');
 
-  // 3. Questions only you can answer, when the data can't tell.
+  // 3. Your own range, upwards: when the journal clearly shows the sound helps and you listen long,
+  // one step brighter, never as far as the step you said was too much. Only if nothing above was gentler.
+  const range = req?.range;
+  const better = f?.followUps?.better || 0;
+  if (!rationale.length && range?.known && sessions >= 4 && worse === 0 && followed >= 3 && better / followed >= 0.6
+    && (f?.medianListeningMin ?? 0) >= 15 && Number.isFinite(r.tiltDbPerOct) && Number.isFinite(range.max?.tiltDbPerOct)
+    && range.max.tiltDbPerOct >= r.tiltDbPerOct + 0.9) {
+    change('tiltDbPerOct', round(Math.min(range.max.tiltDbPerOct, r.tiltDbPerOct + 1), 1),
+      `${better} of your sessions felt better and you usually listen about ${Math.round(f.medianListeningMin)} minutes, so it is now one step brighter, still below the point you said was too much.`);
+  }
+
+  // 4. Questions only you can answer, when the data can't tell.
   if (sessions >= 3 && Number.isFinite(f?.medianListeningMin) && f.medianListeningMin < 10) questions.push('You usually stop within 10 minutes. Is that because it is too much, or because you feel better?');
   if (sessions < 2) questions.push('Use Still during your next attack, then tap how it felt. After a few of those, this check can tune your sound to you.');
   if (!req?.learnedRounds && !Object.keys(req?.tests || {}).length) questions.push('Try "Find it by ear" on a calm day. Two minutes of choices tells Still far more than the questionnaire.');
@@ -56,7 +67,7 @@ export function quickReview(req) {
   if (Number.isFinite(r.tiltDbPerOct) && r.tiltDbPerOct <= -4) fits.push('it is soft and dark rather than hissy');
   if (Number.isFinite(r.fadeInS) && r.fadeInS >= 8) fits.push(`it fades in over ${Math.round(r.fadeInS)} seconds`);
   const summary = n
-    ? `I checked your answers${sessions ? `, ${sessions} journal session${sessions === 1 ? '' : 's'}` : ''} and your current sound, and made ${n} small change${n === 1 ? '' : 's'}. Each one makes it gentler, never louder or harsher.`
+    ? `I checked your answers${sessions ? `, ${sessions} journal session${sessions === 1 ? '' : 's'}` : ''} and your current sound, and made ${n} small change${n === 1 ? '' : 's'}, within your own range and never louder.`
     : sessions
       ? `I checked your answers, ${sessions} journal session${sessions === 1 ? '' : 's'} and your current sound. Nothing needs changing: ${fits.length ? fits.join(', ') : 'it matches what you told us'}${f?.followUps?.better ? `, and ${f.followUps.better} session${f.followUps.better === 1 ? '' : 's'} felt better afterwards` : ''}.`
       : `Your sound already follows your answers${fits.length ? `: ${fits.join(', ')}` : ''}. There is no journal yet, so there is nothing to correct.`;

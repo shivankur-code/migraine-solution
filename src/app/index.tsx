@@ -27,6 +27,8 @@ import { CHECK_IN_HEIGHT, CheckIn } from '../components/room/CheckIn';
 import { DimVeil } from '../components/room/DimVeil';
 import { DarkScreen } from '../components/room/DarkScreen';
 import { gentler, SAID, TEXTURE_FOR, useVoice } from '../lib/useVoice';
+import { liveNudge } from '../recipe/personal.js';
+import { sampleAndTrend } from '../lib/pressure';
 import { SayOrType } from '../components/room/SayOrType';
 
 type Choice = Session['choice'];
@@ -119,7 +121,22 @@ export default function QuietRoom() {
   useEffect(() => { if (dimmed || dark) measureLamp(); }, [dimmed, dark, measureLamp]);
 
   /** Your recipe for this state, or a softer, darker version of it (never louder, never brighter). */
-  const recipes = useMemo(() => roomRecipes(profile, state), [profile, state]);
+  // Live nudges (recipe/personal.js): a little gentler late in the day, and on falling air pressure
+  // when the person allowed the phone's barometer. They apply when a sound starts; never saved.
+  const [pressureFall, setPressureFall] = useState<number | null>(null);
+  const pressureOn = profile.context?.pressure === true;
+  useFocusEffect(useCallback(() => {
+    if (!pressureOn) { setPressureFall(null); return; }
+    let on = true;
+    const take = () => sampleAndTrend().then(d => { if (on) setPressureFall(d); }).catch(() => {});
+    take();
+    const every = setInterval(take, 15 * 60e3);
+    return () => { on = false; clearInterval(every); };
+  }, [pressureOn]));
+  const hour = new Date().getHours();
+  const nudge = useMemo(() => liveNudge({ hour, pressureDropHpa: pressureFall, timeOfDay: profile.context?.timeOfDay !== false }),
+    [hour, pressureFall, profile.context?.timeOfDay]);
+  const recipes = useMemo(() => roomRecipes(profile, state, nudge), [profile, state, nudge]);
 
   // Prepare both sounds for this state while the screen is idle.
   // Also again when the first-run setup closes: its preview was playing, and background renders
@@ -214,7 +231,7 @@ export default function QuietRoom() {
     }
     if (changed) { await saveProfile(p); setProfile(p); }
     if (minutes !== null) { setTimer(String(minutes)); done.push(minutes ? `${minutes} min` : 'No timer'); }
-    const next = roomRecipes(p, st);
+    const next = roomRecipes(p, st, nudge);
     const now = playing === 'softer' ? 'softer' : 'comfort';
     if (playingNow && softer && playing === 'comfort') await playSound('softer', { recipe: next.softer, crossfade: 2, minutes: minutes ?? undefined });
     else if (playingNow && changed) await playSound(now, { recipe: next[now], crossfade: 2.5, minutes: minutes ?? undefined });
@@ -284,7 +301,7 @@ export default function QuietRoom() {
   const timerSub = timerShort.toLowerCase();
   const lampCaption = preparing ? 'Getting ready…' : 'Fade out';
   const line = status || (playingNow ? '' : IDLE_LINE);
-  const sub = playingNow ? `${textureName(current.texture)} · ${mode.label} · ${timerSub}` : undefined;
+  const sub = playingNow ? [textureName(current.texture), mode.label, timerSub, ...nudge.why].join(' · ') : undefined;
 
   // Saving the flag happens the moment setup ends (onSaved); this runs once the overlay has lifted.
   const finishSetup = () => { setOnboarded(true); say('Your sound is ready.'); };
@@ -390,8 +407,12 @@ export default function QuietRoom() {
 
 /** Your recipe for a state, and a softer, darker version of it (never louder, never brighter). */
 type Recipe = ReturnType<typeof recipeFor>['recipe'];
-function roomRecipes(profile: Profile, state: State): { comfort: Recipe; softer: Recipe } {
-  const comfort = recipeFor(profile, state).recipe;
+function roomRecipes(profile: Profile, state: State, nudge?: { levelOffsetDb: number; tiltDelta: number }): { comfort: Recipe; softer: Recipe } {
+  const own = recipeFor(profile, state).recipe;
+  // The live nudge only ever makes it quieter and darker, then the usual safety limits apply.
+  const comfort = nudge && (nudge.levelOffsetDb || nudge.tiltDelta)
+    ? clampRecipe({ ...own, levelDb: own.levelDb + nudge.levelOffsetDb, tiltDbPerOct: own.tiltDbPerOct + nudge.tiltDelta }, state, own.levelDb) as Recipe
+    : own;
   const softer = clampRecipe({ ...applyAdjustments(comfort, { tiltDbPerOct: comfort.tiltDbPerOct - 1.5, cutoffHz: comfort.cutoffHz * 0.6, swellDb: 0, levelOffsetDb: SOFTER_DB }), textureAmount: comfort.textureAmount * 0.5 }, state, comfort.levelDb) as Recipe;
   return { comfort, softer };
 }

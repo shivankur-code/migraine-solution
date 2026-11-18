@@ -1,11 +1,12 @@
 // Contract for the optional AI review, shared by the app and the server.
 // The app sends a privacy-minimal summary (answers, measured values, counts; no name, no dates,
 // no free text). The model may only return small adjustments from the list below; the app's
-// recipe rules then clamp them to the safety limits, so a review can never make a sound louder,
-// brighter than allowed, faster-moving or boosted in any band.
+// recipe rules then clamp them to the safety limits and to the person's own range (personal.js), so a
+// review can move the sound either way inside that range but never make it louder or boost any band.
 
 import { EVIDENCE } from './evidence.js';
 import { BOUNDS } from './bounds.js';
+import { personalLimits } from './personal.js';
 
 export const ADJUSTABLE = ['tiltDbPerOct', 'cutoffHz', 'tonal', 'humHz', 'swellDb', 'swellPeriodS', 'width', 'fadeInS', 'levelOffsetDb'];
 
@@ -92,6 +93,9 @@ export function buildReviewRequest(profile, recipes, feedback) {
     calibration: { contour: (profile.calibration?.contour || []).map(b => ({ hz: b.hz, ceilingDb: round(b.ceilingDb, 1) })) },
     tests: Object.fromEntries(Object.entries(profile.tests || {}).map(([k, v]) => [k, { value: round(v.value), trials: v.trials, decisive: v.decisive }])),
     learnedRounds: profile.rounds || 0,
+    // The person's range: the highest value a suggestion may set for each setting (from the step they
+    // tapped as "too much" in Find your sound, or their current sound when they have not done it).
+    range: (() => { const l = personalLimits(profile, recipes.normal); return { known: l.known, max: { tiltDbPerOct: round(l.tiltDbPerOct, 1), cutoffHz: round(l.cutoffHz, 0), tonal: round(l.tonal), swellDb: round(l.swellDb, 1), width: round(l.width) } }; })(),
     trims: profile.trims || {},
     recipes: { normal: strip(recipes.normal), attack: strip(recipes.attack) },
     feedback: feedback ? {

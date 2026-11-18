@@ -42,6 +42,10 @@ export type Profile = {
   trims: Record<State, number>;     // extra quieting per state after "making it worse", 0 to -30 dB
   consentAI: boolean;
   aiReview: AiReview | null;
+  /** The step tapped as "too much" in Find your sound: the top of the person's range (see recipe/personal.js). */
+  ceiling?: { step: number; at: string } | null;
+  /** Live nudges: a little gentler late in the day (on by default), and on falling air pressure (phones, off until allowed). */
+  context?: { timeOfDay: boolean; pressure: boolean };
 };
 
 export const DEFAULT_X: Point = [0.25, 0.15, 0, 0.3];
@@ -59,7 +63,7 @@ export function freshProfile(): Profile {
   return {
     schema: PROFILE_KEY, answers: {}, intake: {}, calibration: { contour: [] }, tests: {},
     model: null, vetoes: [], rounds: 0, baseLevelDb: 0, trims: { attack: 0, warning: 0, recovering: 0, normal: 0 },
-    consentAI: false, aiReview: null,
+    consentAI: false, aiReview: null, ceiling: null, context: { timeOfDay: true, pressure: false },
   };
 }
 
@@ -111,6 +115,8 @@ export function sanitizeProfile(raw: any): Profile {
   for (const s of ['attack', 'warning', 'recovering', 'normal'] as const) if (Number.isFinite(raw.trims?.[s])) p.trims[s] = clamp(raw.trims[s], -30, 0);
   p.consentAI = raw.consentAI === true;
   if (raw.aiReview && typeof raw.aiReview === 'object' && typeof raw.aiReview.at === 'string') p.aiReview = raw.aiReview;
+  if (Number.isInteger(raw.ceiling?.step) && raw.ceiling.step >= 0 && raw.ceiling.step <= 6) p.ceiling = { step: raw.ceiling.step, at: typeof raw.ceiling.at === 'string' ? raw.ceiling.at : new Date().toISOString() };
+  if (raw.context && typeof raw.context === 'object') p.context = { timeOfDay: raw.context.timeOfDay !== false, pressure: raw.context.pressure === true };
   return p;
 }
 

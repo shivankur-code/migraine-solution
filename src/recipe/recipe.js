@@ -12,6 +12,7 @@
 
 import { MODES, contourEqDb, contourCeilingDb } from '../engine/comfort-engine.js';
 import { BOUNDS, clampRecipe, safeHarmonics } from './bounds.js';
+import { personalLimits, withinRange } from './personal.js';
 import { EVIDENCE } from './evidence.js';
 
 export const RECIPE_VERSION = 1;
@@ -230,7 +231,8 @@ export function buildRecipe(profile, state = 'attack', extra = {}) {
   // an AI review applies only while the person allows AI suggestions. ----
   const ai = profile.aiReview && (profile.consentAI || profile.aiReview.source === 'device') ? profile.aiReview : null;
   if (ai?.adjustments) {
-    recipe = applyAdjustments(recipe, ai.adjustments);
+    // Suggestions move the sound either way, but only inside the person's own range (personal.js).
+    recipe = applyAdjustments(recipe, withinRange(ai.adjustments, personalLimits(profile, recipe)));
     for (const r of ai.rationale || []) note(r.param, r.value ?? '', ai.source === 'device' ? 'review' : 'ai', r.why, ['personal']);
   }
 

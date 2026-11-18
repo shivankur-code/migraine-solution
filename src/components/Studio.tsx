@@ -10,6 +10,7 @@ import { ease, lum, timing } from '../lib/motion';
 import { Control, Ionicons, Press, Tile, useMaterial, useTablet, type IconName } from '../lib/ui';
 import { track } from '../lib/activity';
 import { Dial } from './Dial';
+import { CUTOFF, SWELL, TILT, TONAL, WIDTH } from '../recipe/dials.js';
 import { RecipeArc } from './RecipeArc';
 import { Cymatics } from './Cymatics';
 import type { Figure } from '../lib/cymatics';
@@ -25,11 +26,6 @@ export const textureName = (t: string | undefined) => TEXTURES.find(x => x.value
 
 type DialSpec = { key: 'tone' | 'hum' | 'motion' | 'space'; label: string; stops: string[]; tests: (i: number) => Tests; index: (r: any) => number };
 const nearest = (list: number[], v: number) => list.reduce((best, x, i) => (Math.abs(x - v) < Math.abs(list[best] - v) ? i : best), 0);
-const TILT = [-9, -8, -7, -6, -5, -4, -3];
-const CUTOFF = [600, 900, 1300, 1800, 2500, 3400, 4500];
-const TONAL = [0, 0.2, 0.45, 0.7];
-const SWELL = [0, 0.6, 1.3, 2.2];
-const WIDTH = [0.1, 0.3, 0.55, 0.75, 0.95];
 const set = (value: number) => ({ value, trials: 0, at: new Date().toISOString() });
 
 export const DIALS: Record<DialSpec['key'], DialSpec> = {
