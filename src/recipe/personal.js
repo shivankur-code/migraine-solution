@@ -51,6 +51,7 @@ export function withinRange(adjustments, limits) {
  * `hour` is the local hour (0–23); `pressureDropHpa` is how far pressure fell over the last few
  * hours (positive = falling), or null when unknown or not allowed.
  */
+/** @param {{ hour: number, pressureDropHpa?: number | null, timeOfDay?: boolean }} at */
 export function liveNudge({ hour, pressureDropHpa = null, timeOfDay = true }) {
   let levelOffsetDb = 0, tiltDelta = 0;
   const why = [];
@@ -58,7 +59,7 @@ export function liveNudge({ hour, pressureDropHpa = null, timeOfDay = true }) {
     if (hour >= 22 || hour < 6) { levelOffsetDb -= 2; tiltDelta -= 0.5; why.push('night'); }
     else if (hour >= 19) { levelOffsetDb -= 1; why.push('evening'); }
   }
-  if (Number.isFinite(pressureDropHpa) && pressureDropHpa >= 2) { levelOffsetDb -= 2; tiltDelta -= 0.5; why.push('pressure falling'); }
+  if (typeof pressureDropHpa === 'number' && Number.isFinite(pressureDropHpa) && pressureDropHpa >= 2) { levelOffsetDb -= 2; tiltDelta -= 0.5; why.push('pressure falling'); }
   return { levelOffsetDb: Math.max(-4, levelOffsetDb), tiltDelta: Math.max(-1, tiltDelta), why };
 }
 
